@@ -1,6 +1,5 @@
 package client;
 
-import client.gui.ClientFrame;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.jms.Connection;
@@ -21,20 +20,20 @@ import messaging.JMSSettings;
  *
  * @author Ronny
  */
-public class LoanBrokerGateway {
+abstract class LoanBrokerGateway {
 
     /*
      * Connection to JMS
      */
     private LoanTestClient client;
-    private ClientFrame frame; // GUI
     private Connection connection; // to connect to the JMS
     protected Session session; // session for making messages, producers and consumers
     private ClientSerializer serializer; // for serializing ClientRequest and ClientReply to/from XML
     private MessageProducer producer; // for sending messages
     private MessageConsumer consumer; // for receiving messages
 
-    public LoanBrokerGateway(String name, String requestQueue, String replyQueue) throws Exception {
+    public LoanBrokerGateway(LoanTestClient client, String requestQueue, String replyQueue) throws Exception {
+        this.client = client;
         // connecting to the JMS
         Context jndiContext = new InitialContext();
         ConnectionFactory connectionFactory = (ConnectionFactory) jndiContext.lookup(JMSSettings.CONNECTION);
@@ -56,50 +55,32 @@ public class LoanBrokerGateway {
                 processLoanOffer((TextMessage) message);
             }
         });
-
-        // create the GUI
-        frame = new ClientFrame(name) {
-
-            @Override
-            public void send(ClientRequest request) {
-                applyForLoan(request);
-            }
-        };
-
-        java.awt.EventQueue.invokeLater(new Runnable() {
-
-            public void run() {
-
-                frame.setVisible(true);
-            }
-        });
     }
 
     public void start() {
         try {
             connection.start();
         } catch (JMSException ex) {
-            ex.printStackTrace();
+            Logger.getLogger(LoanBrokerGateway.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
     public void applyForLoan(ClientRequest request) {
         try {
+            //TODO messaginggateway.send
             producer.send(session.createTextMessage(serializer.requestToString(request)));
-            frame.addRequest(request);
+            client.processRequest(request);
         } catch (JMSException ex) {
             Logger.getLogger(LoanBrokerGateway.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
-    public void loanOfferArrived(ClientRequest request, ClientReply reply) {
-        frame.addReply(null, reply);
-    }
+    abstract void loanOfferArrived(ClientReply reply);
 
     private void processLoanOffer(TextMessage message) {
         try {
             ClientReply reply = serializer.replyFromString(((TextMessage) message).getText());
-            loanOfferArrived(null, reply);
+            loanOfferArrived(reply);
         } catch (JMSException ex) {
             Logger.getLogger(LoanBrokerGateway.class.getName()).log(Level.SEVERE, null, ex);
         }
