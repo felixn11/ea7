@@ -1,5 +1,6 @@
 package bank;
 
+import bank.gui.BankFrame;
 import java.text.DecimalFormat;
 import java.util.Random;
 import java.util.logging.Level;
@@ -15,6 +16,7 @@ import java.util.logging.Logger;
 public class Bank {
 
     LoanBrokerGateway gateway;
+    private BankFrame frame; // GUI
     private static final int ERROR_CODE = 1;
     private static final int NO_ERROR_CODE = 0;
     private final double primeRate = 3.5;
@@ -27,8 +29,40 @@ public class Bank {
     public Bank(String bankName, String bankRequestQueue, String bankReplyQueue, boolean debug_mode) throws Exception {
         super();
 
-        gateway = new LoanBrokerGateway(this, bankName, bankRequestQueue, bankReplyQueue, debug_mode);
+        gateway = new LoanBrokerGateway(this, bankName, bankRequestQueue, bankReplyQueue, debug_mode) {
+
+            @Override
+            void receivedQuoteRequest(BankQuoteRequest request) {
+                processRequest(request);
+            }
+        };
         this.name = bankName;
+
+        frame = new BankFrame(bankName, debug_mode) {
+
+            @Override
+            public boolean sendBankReply(BankQuoteRequest request, double interest, int error) {
+                String quoteID = name + "-" + String.valueOf(quoteCounter++);
+                BankQuoteReply reply = new BankQuoteReply(interest, quoteID, error);
+                gateway.sendBankReply(reply);
+                return true;
+            }
+        };
+        java.awt.EventQueue.invokeLater(new Runnable() {
+
+            public void run() {
+
+                frame.setVisible(true);
+            }
+        });
+    }
+
+    void processReply(BankQuoteReply reply) {
+        frame.addReply(null, reply);
+    }
+
+    void processRequest(BankQuoteRequest request) {
+        frame.addRequest(request);
     }
 
     /**

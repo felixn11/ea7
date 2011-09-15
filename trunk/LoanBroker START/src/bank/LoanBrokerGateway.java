@@ -21,7 +21,7 @@ import messaging.JMSSettings;
  *
  * @author Ronny
  */
-public class LoanBrokerGateway {
+abstract class LoanBrokerGateway {
 
     private boolean debug_mode;
     private BankSerializer serializer; // serializer BankQuoteRequest BankQuoteReply to/from XML:
@@ -32,7 +32,6 @@ public class LoanBrokerGateway {
     protected Session session; // JMS session for creating producers, consumers and messages
     private MessageProducer producer; // producer for sending messages
     private MessageConsumer consumer; // consumer for receiving messages
-    private BankFrame frame; // GUI
     private String name;
     private Bank bank;
 
@@ -63,40 +62,6 @@ public class LoanBrokerGateway {
 
         // create GUI
         this.name = bankName;
-        frame = new BankFrame(bankName, debug_mode) {
-
-            @Override
-            public boolean sendBankReply(BankQuoteRequest request, double interest, int error) {
-                String quoteID = name + "-" + String.valueOf(bank.quoteCounter++);
-                BankQuoteReply reply = new BankQuoteReply(interest, quoteID, error);
-                return sendReply(request, reply);
-            }
-        };
-        java.awt.EventQueue.invokeLater(new Runnable() {
-
-            public void run() {
-
-                frame.setVisible(true);
-            }
-        });
-    }
-
-    /**
-     * Sends the reply for one request.
-     * @param request for which the reply is sent
-     * @param reply
-     * @return true if the reply is successfully sent, false if sending fails
-     */
-    private boolean sendReply(BankQuoteRequest request, BankQuoteReply reply) {
-        try {
-            Message replyMessage = session.createTextMessage(serializer.replyToString(reply));
-            producer.send(replyMessage);
-            frame.addReply(request, reply);
-            return true;
-        } catch (JMSException ex) {
-            Logger.getLogger(Bank.class.getName()).log(Level.SEVERE, null, ex);
-            return false;
-        }
     }
 
     /**
@@ -107,19 +72,28 @@ public class LoanBrokerGateway {
     private void onBankQuoteRequest(TextMessage message) {
         try {
             BankQuoteRequest request = serializer.requestFromString(message.getText());
-            frame.addRequest(request);
+            receivedQuoteRequest(request);
             if (debug_mode) { // only in debug mode send immediately random reply
-
                 BankQuoteReply reply = bank.computeReply(request);
-                sendReply(request, reply);
-
+                sendBankReply(reply);
             }
         } catch (Exception ex) {
             Logger.getLogger(Bank.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
-    private void receivedQuoteRequest(BankQuoteRequest request) {
+    abstract void receivedQuoteRequest(BankQuoteRequest request);
+
+    public boolean sendBankReply(BankQuoteReply reply) {
+        try {
+            producer.send(session.createTextMessage(serializer.replyToString(reply)));
+            bank.processReply(reply);
+
+            return true;
+        } catch (JMSException ex) {
+            Logger.getLogger(Bank.class.getName()).log(Level.SEVERE, null, ex);
+            return false;
+        }
     }
 
     public void start() {
@@ -128,8 +102,5 @@ public class LoanBrokerGateway {
         } catch (JMSException ex) {
             Logger.getLogger(LoanBrokerGateway.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }
-
-    private void sendQuoteOffer(BankQuoteRequest request, BankQuoteReply reply) {
     }
 }
