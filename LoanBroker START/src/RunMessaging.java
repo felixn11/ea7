@@ -34,9 +34,9 @@ public class RunMessaging {
             hypotheeker.start();
 
             // send three requests
-            hypotheeker.sendRequest(new ClientRequest(1, 100000, 24));
-            hypotheeker.sendRequest(new ClientRequest(2, 88888, 5));
-            hypotheeker.sendRequest(new ClientRequest(3, 100, 5));
+            hypotheeker.sendRequest(1, 100000, 24);
+            hypotheeker.sendRequest(2, 88888, 5);
+            hypotheeker.sendRequest(3, 100, 5);
 
         } catch (Exception ex) {
             ex.printStackTrace();
