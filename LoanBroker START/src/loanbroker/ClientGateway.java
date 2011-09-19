@@ -24,21 +24,18 @@ public abstract class ClientGateway {
 
     public ClientGateway() throws NamingException, JMSException {
         serializer = new ClientSerializer();
-        msgGateway = new MessagingGateway(JMSSettings.LOAN_REQUEST, JMSSettings.LOAN_REPLY);
+        msgGateway = new MessagingGateway(JMSSettings.LOAN_REPLY, JMSSettings.LOAN_REQUEST);
         msgGateway.setReceivedMessageListener(getNewMessageListener());
     }
 
-    abstract void onClientReply(ClientReply reply);
-
-    public void receivedLoanRequest(ClientRequest request) {
-    }
+    abstract void onClientRequest(ClientRequest request);
 
     private void start() {
         msgGateway.openConnection();
     }
 
-    public void offerLoan(ClientRequest request, ClientReply reply) throws JMSException {
-        msgGateway.sendMessage(msgGateway.createMessage(request.toString()));
+    public void offerLoan(ClientReply reply) throws JMSException {
+        msgGateway.sendMessage(msgGateway.createMessage(serializer.replyToString(reply)));
     }
 
     private MessageListener getNewMessageListener() {
@@ -46,9 +43,8 @@ public abstract class ClientGateway {
 
             public void onMessage(Message message) {
                 try {
-                    TextMessage msg = (TextMessage) message;
-                    ClientReply reply = serializer.replyFromString(msg.getText());
-                    onClientReply(reply);
+                    ClientRequest request = serializer.requestFromString(((TextMessage) message).getText());
+                    onClientRequest(request);
                 } catch (JMSException ex) {
                     Logger.getLogger(BankGateway.class.getName()).log(Level.SEVERE, null, ex);
                 }

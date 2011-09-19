@@ -1,6 +1,5 @@
 package loanbroker;
 
-import bank.BankSerializer;
 import creditbureau.CreditReply;
 import creditbureau.CreditRequest;
 import creditbureau.CreditSerializer;
@@ -25,7 +24,7 @@ public abstract class CreditGateway {
 
     public CreditGateway() throws NamingException, JMSException {
         serializer = new CreditSerializer();
-        msgGateway = new MessagingGateway(JMSSettings.BANK_1, JMSSettings.BANK_REPLY);
+        msgGateway = new MessagingGateway(JMSSettings.CREDIT_REQUEST, JMSSettings.CREDIT_REPLY);
         msgGateway.setReceivedMessageListener(getNewMessageListener());
     }
 
@@ -35,8 +34,8 @@ public abstract class CreditGateway {
         msgGateway.openConnection();
     }
 
-    public void getCreditHistory(CreditRequest request, CreditReply replyListener) throws JMSException {
-        msgGateway.sendMessage(msgGateway.createMessage(request.toString()));
+    public void getCreditHistory(CreditRequest request) throws JMSException {
+        msgGateway.sendMessage(msgGateway.createMessage(serializer.requestToString(request)));
     }
 
     private MessageListener getNewMessageListener() {
@@ -44,8 +43,7 @@ public abstract class CreditGateway {
 
             public void onMessage(Message message) {
                 try {
-                    TextMessage msg = (TextMessage) message;
-                    CreditReply reply = serializer.replyFromString(msg.getText());
+                    CreditReply reply = serializer.replyFromString(((TextMessage) message).getText());
                     onCreditReply(reply);
                 } catch (JMSException ex) {
                     Logger.getLogger(BankGateway.class.getName()).log(Level.SEVERE, null, ex);

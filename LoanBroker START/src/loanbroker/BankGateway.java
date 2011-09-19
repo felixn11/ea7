@@ -23,7 +23,6 @@ public abstract class BankGateway {
     private BankSerializer serializer;
 
     public BankGateway() throws NamingException, JMSException {
-
         serializer = new BankSerializer();
         msgGateway = new MessagingGateway(JMSSettings.BANK_1, JMSSettings.BANK_REPLY);
         msgGateway.setReceivedMessageListener(getNewMessageListener());
@@ -35,9 +34,9 @@ public abstract class BankGateway {
         msgGateway.openConnection();
     }
 
-    public void getBankQuote(BankQuoteRequest request, BankQuoteReply replyListener) throws JMSException {
+    public void getBankQuote(BankQuoteRequest request) throws JMSException {
 
-        msgGateway.sendMessage(msgGateway.createMessage(request.toString()));
+        msgGateway.sendMessage(msgGateway.createMessage(serializer.requestToString(request)));
     }
 
     private MessageListener getNewMessageListener() {
@@ -45,8 +44,7 @@ public abstract class BankGateway {
 
             public void onMessage(Message message) {
                 try {
-                    TextMessage msg = (TextMessage) message;
-                    BankQuoteReply reply = serializer.replyFromString(msg.getText());
+                    BankQuoteReply reply = serializer.replyFromString(((TextMessage) message).getText());
                     onBankReply(reply);
                 } catch (JMSException ex) {
                     Logger.getLogger(BankGateway.class.getName()).log(Level.SEVERE, null, ex);
