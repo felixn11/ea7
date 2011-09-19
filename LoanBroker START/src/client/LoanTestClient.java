@@ -20,7 +20,7 @@ public class LoanTestClient {
     public LoanTestClient(String name, String requestQueue, String replyQueue) throws Exception {
         super();
 
-        gateway = new LoanBrokerGateway(this, requestQueue, replyQueue) {
+        gateway = new LoanBrokerGateway(requestQueue, replyQueue) {
 
             @Override
             void loanOfferArrived(ClientReply reply) {
@@ -33,7 +33,7 @@ public class LoanTestClient {
 
             @Override
             public void send(ClientRequest request) {
-                gateway.applyForLoan(request);
+                processRequest(request);
             }
         };
 
@@ -45,22 +45,6 @@ public class LoanTestClient {
         });
     }
 
-    void processReply(ClientReply reply) {
-        frame.addReply(null, reply);
-    }
-
-    void processRequest(ClientRequest request) {
-        frame.addRequest(request);
-    }
-
-    /**
-     * Sends new loan request to the LoanBroker.
-     * @param request
-     */
-    public void sendRequest(int SSN, int amount, int time) {
-        gateway.applyForLoan(new ClientRequest(SSN, amount, time));
-    }
-
     /**
      * Opens connestion to JMS,so that messages can be send and received.
      */
@@ -70,5 +54,22 @@ public class LoanTestClient {
         } catch (Exception ex) {
             Logger.getLogger(LoanTestClient.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    void processRequest(ClientRequest request) {
+        frame.addRequest(request);
+        gateway.applyForLoan(request);
+    }
+
+    void processReply(ClientReply reply) {
+        frame.addReply(null, reply);
+    }
+
+    /**
+     * Sends new loan request to the LoanBroker.
+     * @param request
+     */
+    public void sendRequest(int SSN, int amount, int time) {
+        processRequest(new ClientRequest(SSN, amount, time));
     }
 }
