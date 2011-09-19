@@ -15,6 +15,7 @@ import java.util.logging.Logger;
  */
 public class Bank {
 
+    private boolean debug_mode;
     LoanBrokerGateway gateway;
     private BankFrame frame; // GUI
     private static final int ERROR_CODE = 1;
@@ -29,7 +30,7 @@ public class Bank {
     public Bank(String bankName, String bankRequestQueue, String bankReplyQueue, boolean debug_mode) throws Exception {
         super();
 
-        gateway = new LoanBrokerGateway(this, bankName, bankRequestQueue, bankReplyQueue, debug_mode) {
+        gateway = new LoanBrokerGateway(bankRequestQueue, bankReplyQueue) {
 
             @Override
             void receivedQuoteRequest(BankQuoteRequest request) {
@@ -44,7 +45,7 @@ public class Bank {
             public boolean sendBankReply(BankQuoteRequest request, double interest, int error) {
                 String quoteID = name + "-" + String.valueOf(quoteCounter++);
                 BankQuoteReply reply = new BankQuoteReply(interest, quoteID, error);
-                gateway.sendBankReply(reply);
+                processReply(request, reply);
                 return true;
             }
         };
@@ -57,12 +58,29 @@ public class Bank {
         });
     }
 
-    void processReply(BankQuoteReply reply) {
-        frame.addReply(null, reply);
+    /**
+     * Opens connestion to JMS,so that messages can be send and received.
+     */
+    public void start() {
+        try {
+            gateway.start();
+        } catch (Exception ex) {
+            Logger.getLogger(Bank.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    void processReply(BankQuoteRequest request, BankQuoteReply reply) {
+        frame.addReply(request, reply);
+        gateway.sendBankReply(reply);
     }
 
     void processRequest(BankQuoteRequest request) {
         frame.addRequest(request);
+        if (debug_mode) { // only in debug mode send immediately random reply
+            BankQuoteReply reply = computeReply(request);
+            processReply(request, reply);
+            gateway.sendBankReply(reply);
+        }
     }
 
     /**
@@ -82,16 +100,5 @@ public class Bank {
         }
         String quoteID = name + "-" + String.valueOf(++quoteCounter);
         return new BankQuoteReply(interest, quoteID, error);
-    }
-
-    /**
-     * Opens connestion to JMS,so that messages can be send and received.
-     */
-    public void start() {
-        try {
-            gateway.start();
-        } catch (Exception ex) {
-            Logger.getLogger(Bank.class.getName()).log(Level.SEVERE, null, ex);
-        }
     }
 }
