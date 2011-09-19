@@ -2,21 +2,6 @@ package creditbureau;
 
 import creditbureau.gui.CreditFrame;
 import java.util.Random;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
-import javax.jms.Destination;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageListener;
-import javax.jms.MessageProducer;
-import javax.jms.Session;
-import javax.jms.TextMessage;
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import messaging.JMSSettings;
 
 /**
  * This class represents one Credit Agency Application.
@@ -27,40 +12,19 @@ import messaging.JMSSettings;
  */
 public class CreditBureau {
 
-    private Random random = new Random(); // for random generation of replies
+    LoanBrokerGateway gateway;
     private CreditFrame frame; // GUI
-    private CreditSerializer serializer; // serializer CreditRequest CreditReply to/from XML:
-    /**
-     * attributes for connection to JMS
-     */
-    private Connection connection; // connection to the JMS server
-    protected Session session; // JMS session fro creating producers, consumers and messages
-    private MessageProducer producer; // producer for sending messages
-    private MessageConsumer consumer; // consumer for receiving messages
+    private Random random = new Random(); // for random generation of replies
 
     public CreditBureau(String creditRequestQueue, String creditReplyQueue) throws Exception {
         super();
-        // connect to JMS
-        Context jndiContext = new InitialContext();
-        ConnectionFactory connectionFactory = (ConnectionFactory) jndiContext.lookup(JMSSettings.CONNECTION);
-        connection = connectionFactory.createConnection();
-        session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        gateway = new LoanBrokerGateway(creditRequestQueue, creditReplyQueue) {
 
-        // connect to the sender channel
-        Destination senderDestination = (Destination) jndiContext.lookup(creditReplyQueue);
-        producer = session.createProducer(senderDestination);
-
-        // connect to the receiver channel and register as a listener on it
-        Destination receiverDestination = (Destination) jndiContext.lookup(creditRequestQueue);
-        consumer = session.createConsumer(receiverDestination);
-        consumer.setMessageListener(new MessageListener() {
-
-            public void onMessage(Message msg) {
-                onCreditRequest((TextMessage) msg);
+            @Override
+            void receivedCreditRequest(CreditRequest request) {
+                processRequest(request);
             }
-        });
-        // create the serializer
-        serializer = new CreditSerializer();
+        };
 
         // create GUI
         frame = new CreditFrame();
@@ -72,28 +36,24 @@ public class CreditBureau {
             }
         });
     }
-/**
-     * Processes a new request message by randomly generating a reply and sending it back.
-     * @param message the credit request message
-     */
-    private void onCreditRequest(TextMessage message) {
-        try {
-            CreditRequest request = serializer.requestFromString(message.getText());
-            frame.addRequest(request);
-            CreditReply reply = computeReply(request);
-            Message replyMessage = session.createTextMessage(serializer.replyToString(reply));
-            producer.send(replyMessage);
-            frame.addReply(request, reply);
-        } catch (Exception ex) {
-            Logger.getLogger(CreditBureau.class.getName()).log(Level.SEVERE, null, ex);
-        }
+
+    void processReply(CreditRequest request, CreditReply reply) {
+        frame.addReply(request, reply);
+        gateway.sendCreditHistory(request, reply);
     }
-   /**
-    * Randomly generates a CreditReply given the request.
-    * @param request is the Creditrequest for which the reply must be generated
-    * @return a credit reply
-    */
-    private CreditReply computeReply(CreditRequest request) {
+
+    void processRequest(CreditRequest request) {
+        frame.addRequest(request);
+        CreditReply reply = computeReply(request);
+        processReply(request, reply);
+    }
+
+    /**
+     * Randomly generates a CreditReply given the request.
+     * @param request is the Creditrequest for which the reply must be generated
+     * @return a credit reply
+     */
+    public CreditReply computeReply(CreditRequest request) {
         int ssn = request.getSSN();
 
         int score = (int) (random.nextInt(600) + 300);
@@ -101,14 +61,11 @@ public class CreditBureau {
 
         return new CreditReply(ssn, score, history);
     }
+
     /**
      * Opens connestion to JMS,so that messages can be send and received.
      */
     public void start() {
-        try {
-            connection.start();
-        } catch (JMSException ex) {
-            Logger.getLogger(CreditBureau.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        gateway.start();
     }
 }
