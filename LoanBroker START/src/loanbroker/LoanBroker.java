@@ -78,10 +78,10 @@ public class LoanBroker {
     public LoanBroker(String clientRequestQueue, String clientReplyQueue, String creditRequestQueue, String creditReplyQueue, String bankRequestQueue, String bankReplyQueue) throws Exception {
         super();
         // connecting to the JMS 
-        Context jndiContext = new InitialContext();
+       /* Context jndiContext = new InitialContext();
         ConnectionFactory connectionFactory = (ConnectionFactory) jndiContext.lookup(JMSSettings.CONNECTION);
         connection = connectionFactory.createConnection();
-        session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);*/
         /*
          * setting up the LoanTestClient connection
          *
@@ -132,36 +132,36 @@ public class LoanBroker {
          */
         frame = new LoanBrokerFrame();
         java.awt.EventQueue.invokeLater(new Runnable() {
-            
+
             public void run() {
-                
+
                 frame.setVisible(true);
             }
         });
         clientGateway = new ClientGateway() {
-            
+
             @Override
             void onClientRequest(ClientRequest request) {
-                onClientRequest(request);
+                LoanBroker.this.onClientRequest(request);
             }
         };
-        
+
         creditGateway = new CreditGateway() {
-            
+
             @Override
             void onCreditReply(CreditReply reply) {
                 LoanBroker.this.onCreditReply(reply);
             }
         };
-        
+
         bankGateway = new BankGateway() {
-            
+
             @Override
             void onBankReply(BankQuoteReply reply) {
                 LoanBroker.this.onBankReply(reply);
             }
         };
-        
+
     }
 
     /**
@@ -171,9 +171,9 @@ public class LoanBroker {
      */
     private void onClientRequest(ClientRequest request) {
         try {
-            frame.addObject(null, request);
             CreditRequest credit = createCreditRequest(request);
             creditGateway.getCreditHistory(credit);
+            frame.addObject(null, request);
         } catch (JMSException ex) {
             Logger.getLogger(LoanBroker.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -186,9 +186,9 @@ public class LoanBroker {
      */
     private void onCreditReply(CreditReply reply) {
         try {
-            frame.addObject(null, reply); // add the reply to the GUI 
             BankQuoteRequest bank = createBankRequest(null, reply);
             bankGateway.getBankQuote(bank);
+            frame.addObject(null, reply); // add the reply to the GUI 
         } catch (JMSException ex) {
             Logger.getLogger(LoanBroker.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -201,9 +201,9 @@ public class LoanBroker {
      */
     private void onBankReply(BankQuoteReply reply) {
         try {
-            frame.addObject(null, reply); // add the reply to the GUI  
             ClientReply client = createClientReply(reply);
             clientGateway.offerLoan(client);
+            frame.addObject(null, reply); // add the reply to the GUI  
         } catch (JMSException ex) {
             Logger.getLogger(LoanBroker.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -249,10 +249,8 @@ public class LoanBroker {
      * Opens connestion to JMS,so that messages can be send and received.
      */
     public void start() {
-        try {
-            connection.start();
-        } catch (JMSException ex) {
-            ex.printStackTrace();
-        }
+        clientGateway.start();
+        bankGateway.start();
+        creditGateway.start();
     }
 }

@@ -38,13 +38,13 @@ public class CreditBureau {
     }
 
     void processReply(CreditRequest request, CreditReply reply) {
-        frame.addReply(request, reply);
         gateway.sendCreditHistory(request, reply);
+        frame.addReply(request, reply);
     }
 
     void processRequest(CreditRequest request) {
-        frame.addRequest(request);
         CreditReply reply = computeReply(request);
+        frame.addRequest(request);
         processReply(request, reply);
     }
 

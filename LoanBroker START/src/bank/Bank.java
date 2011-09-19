@@ -38,7 +38,7 @@ public class Bank {
             }
         };
         this.name = bankName;
-
+        this.debug_mode = debug_mode;
         frame = new BankFrame(bankName, debug_mode) {
 
             @Override
@@ -79,7 +79,6 @@ public class Bank {
         if (debug_mode) { // only in debug mode send immediately random reply
             BankQuoteReply reply = computeReply(request);
             processReply(request, reply);
-            gateway.sendBankReply(reply);
         }
     }
 

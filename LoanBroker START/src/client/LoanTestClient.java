@@ -57,8 +57,8 @@ public class LoanTestClient {
     }
 
     void processRequest(ClientRequest request) {
-        frame.addRequest(request);
         gateway.applyForLoan(request);
+        frame.addRequest(request);
     }
 
     void processReply(ClientReply reply) {

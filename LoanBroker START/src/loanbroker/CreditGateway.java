@@ -30,7 +30,7 @@ public abstract class CreditGateway {
 
     abstract void onCreditReply(CreditReply reply);
 
-    private void start() {
+    public void start() {
         msgGateway.openConnection();
     }
 

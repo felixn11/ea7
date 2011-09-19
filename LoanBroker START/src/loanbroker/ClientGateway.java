@@ -30,7 +30,7 @@ public abstract class ClientGateway {
 
     abstract void onClientRequest(ClientRequest request);
 
-    private void start() {
+    public void start() {
         msgGateway.openConnection();
     }
 
