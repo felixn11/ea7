@@ -30,12 +30,11 @@ public abstract class BankGateway {
 
     abstract void onBankReply(BankQuoteReply reply);
 
-    private void start() {
+    public void start() {
         msgGateway.openConnection();
     }
 
     public void getBankQuote(BankQuoteRequest request) throws JMSException {
-
         msgGateway.sendMessage(msgGateway.createMessage(serializer.requestToString(request)));
     }
 
