@@ -132,36 +132,36 @@ public class LoanBroker {
          */
         frame = new LoanBrokerFrame();
         java.awt.EventQueue.invokeLater(new Runnable() {
-
+            
             public void run() {
-
+                
                 frame.setVisible(true);
             }
         });
         clientGateway = new ClientGateway() {
-
+            
             @Override
-            void onClientReply(ClientReply reply) {
-                LoanBroker.this.onClientRequest(null);
+            void onClientRequest(ClientRequest request) {
+                onClientRequest(request);
             }
         };
-
+        
         creditGateway = new CreditGateway() {
-
+            
             @Override
             void onCreditReply(CreditReply reply) {
                 LoanBroker.this.onCreditReply(reply);
             }
         };
-
+        
         bankGateway = new BankGateway() {
-
+            
             @Override
             void onBankReply(BankQuoteReply reply) {
                 LoanBroker.this.onBankReply(reply);
             }
         };
-
+        
     }
 
     /**
@@ -169,18 +169,14 @@ public class LoanBroker {
      * It generates a CreditRequest and sends it to the CreditBureau.
      * @param message the incomming message containng the ClientRequest
      */
-    private void onClientRequest(ClientReply reply) {
+    private void onClientRequest(ClientRequest request) {
         try {
-           frame.addObject(null, reply);
-           clientGateway.offerLoan(null, reply);
+            frame.addObject(null, request);
+            CreditRequest credit = createCreditRequest(request);
+            creditGateway.getCreditHistory(credit);
         } catch (JMSException ex) {
-            ex.printStackTrace();
+            Logger.getLogger(LoanBroker.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }
-
-    private void onClientReply(ClientReply reply) {
-        frame.addObject(null, reply);
-        clientGateway.onClientReply(reply);
     }
 
     /**
@@ -189,11 +185,10 @@ public class LoanBroker {
      * @param message the incomming message containng the CreditReply
      */
     private void onCreditReply(CreditReply reply) {
-               try {
-            frame.addObject(null, reply); // add the reply to the GUI            
-            creditGateway.getCreditHistory(null, reply);
-            //bankProducer.send(bankRequestMessage); // send the bank quote request message to the Bank      
-            //bankProducer.send(bankRequestMessage); // send the bank quote request message to the Bank
+        try {
+            frame.addObject(null, reply); // add the reply to the GUI 
+            BankQuoteRequest bank = createBankRequest(null, reply);
+            bankGateway.getBankQuote(bank);
         } catch (JMSException ex) {
             Logger.getLogger(LoanBroker.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -206,8 +201,9 @@ public class LoanBroker {
      */
     private void onBankReply(BankQuoteReply reply) {
         try {
-            frame.addObject(null, reply); // add the reply to the GUI            
-            bankGateway.getBankQuote(null, reply);
+            frame.addObject(null, reply); // add the reply to the GUI  
+            ClientReply client = createClientReply(reply);
+            clientGateway.offerLoan(client);
         } catch (JMSException ex) {
             Logger.getLogger(LoanBroker.class.getName()).log(Level.SEVERE, null, ex);
         }
