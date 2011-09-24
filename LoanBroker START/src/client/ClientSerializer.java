@@ -1,11 +1,12 @@
 package client;
 
 import com.thoughtworks.xstream.XStream;
+import messaging.requestreply.IRequestReplySerializer;
 
 /**
  * This class serializes ClientReply and ClientRequest to and from XML.
  */
-public class ClientSerializer {
+public class ClientSerializer implements IRequestReplySerializer<ClientRequest, ClientReply> {
 
     private static final String ALIAS_REQUEST = "ClientRequest"; // the tag name for ClientRequest
     private static final String ALIAS_REPLY = "ClientReply"; // the tag name for ClientReply
@@ -14,11 +15,11 @@ public class ClientSerializer {
     public ClientSerializer() {
         super();
         xstream = new XStream();
-         // register aliases (tag names)
+        // register aliases (tag names)
         xstream.alias(ALIAS_REQUEST, ClientRequest.class);
         xstream.alias(ALIAS_REPLY, ClientReply.class);
     }
-    
+
     /**
      * This method parses a ClientRequest from an XML string.
      * @param str is the string containing the XML
@@ -45,7 +46,7 @@ public class ClientSerializer {
     public String requestToString(ClientRequest request) {
         return xstream.toXML(request);
     }
-    
+
     /**
      * Serializes a ClientReply into XML string.
      * @param reply is the ClientReply to be serialized into XML

@@ -1,11 +1,12 @@
 package creditbureau;
 
 import com.thoughtworks.xstream.XStream;
+import messaging.requestreply.IRequestReplySerializer;
 
 /**
  * This class serializes CreditReply and CreditRequest to and from XML.
  */
-public class CreditSerializer{
+public class CreditSerializer implements IRequestReplySerializer<CreditRequest, CreditReply> {
 
     private static final String ALIAS_REQUEST = "CreditRequest"; // tag name for CreditRequest
     private static final String ALIAS_REPLY = "CreditReply"; // tag name for CreditReply
@@ -14,18 +15,18 @@ public class CreditSerializer{
     public CreditSerializer() {
         super();
         xstream = new XStream();
-         // register aliases (i.e., tag names)
+        // register aliases (i.e., tag names)
         xstream.alias(ALIAS_REQUEST, CreditRequest.class);
         xstream.alias(ALIAS_REPLY, CreditReply.class);
     }
-    
+
     /**
      * This method parses a CreditRequest from an XML string.
      * @param str is the string containing the XML
      * @return the CreditRequest containng the same information like the given XML (str)
      */
     public CreditRequest requestFromString(String str) {
-        return (CreditRequest)xstream.fromXML(str);
+        return (CreditRequest) xstream.fromXML(str);
     }
 
     /**
@@ -36,7 +37,7 @@ public class CreditSerializer{
     public CreditReply replyFromString(String str) {
         return (CreditReply) xstream.fromXML(str);
     }
-    
+
     /**
      * Serializes a CreditRequest into XML string.
      * @param request is the CrditRequest to be serialized into XML

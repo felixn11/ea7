@@ -1,17 +1,17 @@
 package messaging.requestreply;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.TextMessage;
 import java.util.Hashtable;
 import javax.jms.MessageListener;
-import messaging.IReceiver;
-import messaging.ISender;
 import messaging.MessagingGateway;
-import messaging.impl.MessagingFactory;
 
 /**
  * This class is used for sending requests and receiving replies
- * in asynchronous communication.This class inherits ythe MessagingGateway,
+ * in asynchronous communication.This class inherits the MessagingGateway,
  * i.e., it has access to a MessageSender and MessageReceiver.
  * @param <REQUEST> is the domain class for requests
  * @param <REPLY> is the domain class for replies
@@ -91,7 +91,14 @@ public class AsynchronousRequestor<REQUEST, REPLY> {
      * @param listener is the listener that will be notified when the reply arrives for this request
      */
     public synchronized void sendRequest(REQUEST request, IReplyListener<REQUEST, REPLY> listener) {
-       //TODO
+        try {
+            TextMessage msg = gateway.createMessage(serializer.requestToString(request));
+            msg.setJMSReplyTo(gateway.destinationReceiver);
+            gateway.sendMessage(msg);
+            listeners.put(msg.getJMSMessageID(), new Pair(listener, request));
+        } catch (Exception ex) {
+            Logger.getLogger(AsynchronousRequestor.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     /**
@@ -99,13 +106,19 @@ public class AsynchronousRequestor<REQUEST, REPLY> {
      * This method is invoked for processing of a single reply when it arrives.
      * This method should be registered on the MessageReceiver.
      * This method should:
-     * 1. get the registered listener fo the JMSCorrelationID of the Message
+     * 1. get the registered listener for the JMSCorrelationID of the Message
      * 2. de-serialize the REPLY from the Message
      * 3. notify the listener about the arrival of the REPLY
      * 4. unregister the listener
      * @param message the reply message
      */
     private synchronized void onReply(TextMessage message) {
-       //TODO
+        try {
+            Pair pair = listeners.get(message.getJMSCorrelationID());
+            REPLY reply = serializer.replyFromString((message).getText());
+            pair.listener.onReply(pair.request, reply);
+        } catch (Exception ex) {
+            Logger.getLogger(AsynchronousRequestor.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 }
