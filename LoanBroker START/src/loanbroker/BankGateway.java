@@ -22,7 +22,7 @@ public abstract class BankGateway {
     private MessagingGateway msgGateway;
     private BankSerializer serializer;
 
-    public BankGateway() throws NamingException, JMSException {
+    public BankGateway(String requestQueue, String replyQueue) throws NamingException, JMSException {
         serializer = new BankSerializer();
         msgGateway = new MessagingGateway(JMSSettings.BANK_1, JMSSettings.BANK_REPLY);
         msgGateway.setReceivedMessageListener(getNewMessageListener());

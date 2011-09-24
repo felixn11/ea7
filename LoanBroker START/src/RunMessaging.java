@@ -16,7 +16,7 @@ public class RunMessaging {
     public static void main(String[] args) {
         try {
             // create a LoanBroker middleware
-            LoanBroker broker = new LoanBroker(JMSSettings.LOAN_REQUEST, JMSSettings.LOAN_REPLY, JMSSettings.CREDIT_REQUEST, JMSSettings.CREDIT_REPLY, JMSSettings.BANK_1, JMSSettings.BANK_REPLY);
+            LoanBroker broker = new LoanBroker(JMSSettings.LOAN_REQUEST, JMSSettings.CREDIT_REQUEST, JMSSettings.CREDIT_REPLY, JMSSettings.BANK_1, JMSSettings.BANK_REPLY);
 
             // create a Client Application
             LoanTestClient hypotheeker = new LoanTestClient("The Hypotheker", JMSSettings.LOAN_REQUEST, JMSSettings.LOAN_REPLY);

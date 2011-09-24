@@ -10,6 +10,7 @@ import client.ClientReply;
 import client.ClientRequest;
 import creditbureau.CreditReply;
 import creditbureau.CreditRequest;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import loanbroker.gui.LoanBrokerFrame;
@@ -24,6 +25,10 @@ public class LoanBroker {
     private CreditGateway creditGateway;
     private BankGateway bankGateway;
     private LoanBrokerFrame frame; // GUI
+    /**
+     *  the collection of active clientRequests
+     */
+    private ArrayList<ClientRequestProcess> activeClientProcesses;
 
     /**
      * Intializes attributes, and registers itself (method onClinetRequest) as
@@ -35,9 +40,32 @@ public class LoanBroker {
      * @param bankRequestQueue
      * @param bankReplyQueue
      */
-    public LoanBroker(String clientRequestQueue, String clientReplyQueue, String creditRequestQueue, String creditReplyQueue, String bankRequestQueue, String bankReplyQueue) throws Exception {
+    public LoanBroker(String clientRequestQueue, String creditRequestQueue, String creditReplyQueue, String bankRequestQueue, String bankReplyQueue) throws Exception {
         super();
+        activeClientProcesses = new ArrayList<ClientRequestProcess>();
+        clientGateway = new ClientGateway(clientRequestQueue) {
 
+            @Override
+            void onClientRequest(ClientRequest request) {
+                LoanBroker.this.onClientRequest(request);
+            }
+        };
+
+        creditGateway = new CreditGateway(creditRequestQueue, creditReplyQueue) {
+
+            @Override
+            void onCreditReply(CreditReply reply) {
+                LoanBroker.this.onCreditReply(reply);
+            }
+        };
+
+        bankGateway = new BankGateway(bankRequestQueue, bankReplyQueue) {
+
+            @Override
+            void onBankReply(BankQuoteReply reply) {
+                LoanBroker.this.onBankReply(reply);
+            }
+        };
         /*
          * Make the GUI
          */
@@ -49,29 +77,6 @@ public class LoanBroker {
                 frame.setVisible(true);
             }
         });
-        clientGateway = new ClientGateway() {
-
-            @Override
-            void onClientRequest(ClientRequest request) {
-                LoanBroker.this.onClientRequest(request);
-            }
-        };
-
-        creditGateway = new CreditGateway() {
-
-            @Override
-            void onCreditReply(CreditReply reply) {
-                LoanBroker.this.onCreditReply(reply);
-            }
-        };
-
-        bankGateway = new BankGateway() {
-
-            @Override
-            void onBankReply(BankQuoteReply reply) {
-                LoanBroker.this.onBankReply(reply);
-            }
-        };
     }
 
     /**
@@ -81,8 +86,28 @@ public class LoanBroker {
      */
     private void onClientRequest(ClientRequest request) {
         try {
-            CreditRequest credit = createCreditRequest(request);
-            creditGateway.getCreditHistory(credit);
+            // CreditRequest credit = createCreditRequest(request);
+            // creditGateway.getCreditHistory(credit);
+            // frame.addObject(null, request);
+
+            final ClientRequestProcess p = new ClientRequestProcess(request, creditGateway, clientGateway, bankGateway) {
+
+                @Override
+                void notifySentClientReply(ClientRequestProcess process) {
+                    activeClientProcesses.remove(process);
+                }
+
+                @Override
+                void notifyReceivedCreditReply(ClientRequest clientRequest, CreditReply reply) {
+                    frame.addObject(clientRequest, reply);
+                }
+
+                @Override
+                void notifyReceivedBankReply(ClientRequest clientRequest, BankQuoteReply reply) {
+                    frame.addObject(clientRequest, reply);
+                }
+            };
+            activeClientProcesses.add(p);
             frame.addObject(null, request);
         } catch (Exception ex) {
             Logger.getLogger(LoanBroker.class.getName()).log(Level.SEVERE, null, ex);
