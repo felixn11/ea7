@@ -6,27 +6,13 @@ package loanbroker;
 
 import bank.BankQuoteReply;
 import bank.BankQuoteRequest;
-import bank.BankSerializer;
-import client.*;
+import client.ClientReply;
+import client.ClientRequest;
 import creditbureau.CreditReply;
 import creditbureau.CreditRequest;
-import creditbureau.CreditSerializer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import loanbroker.gui.LoanBrokerFrame;
-import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
-import javax.jms.Destination;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageListener;
-import javax.jms.MessageProducer;
-import javax.jms.Session;
-import javax.jms.TextMessage;
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import messaging.JMSSettings;
 
 /**
  *
@@ -34,34 +20,8 @@ import messaging.JMSSettings;
  */
 public class LoanBroker {
 
-    /**
-     *  Connection to the JMS
-     */
-    private Connection connection; // JMS connection
-    protected Session session; // JMS session
-      /*
-     * Connection to the TestClient
-     *
-    private MessageProducer clientProducer; // for sending messages to the Client
-    private MessageConsumer clientConsumer; // for receiving messages from the Client
-     */
-    private ClientSerializer clientSerializer; // serializer ClientRequest ClientReply to/from XML:
     private ClientGateway clientGateway;
-    /*
-     * Connection to the CreditBuerau
-     *
-    private MessageProducer creditProducer; // for sending messages to the CreditBuerau
-    private MessageConsumer creditConsumer; // for receiving messages from the CreditBuerau
-     */
-    private CreditSerializer creditSerializer; // serializer CreditRequest CreditReply to/from XML:
     private CreditGateway creditGateway;
-
-    /*
-     * Connection to the Bank
-     */
-    /* private MessageProducer bankProducer; // for sending messages to the Bank
-    private MessageConsumer bankConsumer; // for receiving messages from the Bank
-    private BankSerializer bankSerializer;*/ // serializer BankQuoteRequest BankQuoteReply to/from XML:
     private BankGateway bankGateway;
     private LoanBrokerFrame frame; // GUI
 
@@ -77,56 +37,7 @@ public class LoanBroker {
      */
     public LoanBroker(String clientRequestQueue, String clientReplyQueue, String creditRequestQueue, String creditReplyQueue, String bankRequestQueue, String bankReplyQueue) throws Exception {
         super();
-        // connecting to the JMS 
-       /* Context jndiContext = new InitialContext();
-        ConnectionFactory connectionFactory = (ConnectionFactory) jndiContext.lookup(JMSSettings.CONNECTION);
-        connection = connectionFactory.createConnection();
-        session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);*/
-        /*
-         * setting up the LoanTestClient connection
-         *
-        Destination clientSenderDestination = (Destination) jndiContext.lookup(clientReplyQueue);
-        clientProducer = session.createProducer(clientSenderDestination);
-        Destination clientReceiverDestination = (Destination) jndiContext.lookup(clientRequestQueue);
-        clientConsumer = session.createConsumer(clientReceiverDestination);
-        clientConsumer.setMessageListener(new MessageListener() {
-        
-        public void onMessage(Message msg) {
-        onClientRequest((TextMessage) msg);
-        }
-        });
-        clientSerializer = new ClientSerializer();
-        
-        /*
-         * setting up the CreditBureau connection
-         *
-        Destination creditSenderDestination = (Destination) jndiContext.lookup(creditRequestQueue);
-        creditProducer = session.createProducer(creditSenderDestination);
-        Destination creditReceiverDestination = (Destination) jndiContext.lookup(creditReplyQueue);
-        creditConsumer = session.createConsumer(creditReceiverDestination);
-        creditConsumer.setMessageListener(new MessageListener() {
-        
-        public void onMessage(Message msg) {
-        onCreditReply((TextMessage) msg);
-        }
-        });
-        creditSerializer = new CreditSerializer();
-        
-        
-        /*
-         * setting up the Bank connection
-         */
-        /*  Destination bankSenderDestination = (Destination) jndiContext.lookup(bankRequestQueue);
-        bankProducer = session.createProducer(bankSenderDestination);
-        Destination bankReceiverDestination = (Destination) jndiContext.lookup(bankReplyQueue);
-        bankConsumer = session.createConsumer(bankReceiverDestination);
-        bankConsumer.setMessageListener(new MessageListener() {
-        
-        public void onMessage(Message msg) {
-        onBankReply((TextMessage) msg);
-        }
-        });
-        bankSerializer = new BankSerializer();*/
+
         /*
          * Make the GUI
          */
@@ -161,7 +72,6 @@ public class LoanBroker {
                 LoanBroker.this.onBankReply(reply);
             }
         };
-
     }
 
     /**
@@ -174,7 +84,7 @@ public class LoanBroker {
             CreditRequest credit = createCreditRequest(request);
             creditGateway.getCreditHistory(credit);
             frame.addObject(null, request);
-        } catch (JMSException ex) {
+        } catch (Exception ex) {
             Logger.getLogger(LoanBroker.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -189,7 +99,7 @@ public class LoanBroker {
             BankQuoteRequest bank = createBankRequest(null, reply);
             bankGateway.getBankQuote(bank);
             frame.addObject(null, reply); // add the reply to the GUI 
-        } catch (JMSException ex) {
+        } catch (Exception ex) {
             Logger.getLogger(LoanBroker.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -204,7 +114,7 @@ public class LoanBroker {
             ClientReply client = createClientReply(reply);
             clientGateway.offerLoan(client);
             frame.addObject(null, reply); // add the reply to the GUI  
-        } catch (JMSException ex) {
+        } catch (Exception ex) {
             Logger.getLogger(LoanBroker.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
