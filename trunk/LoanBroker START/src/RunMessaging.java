@@ -1,7 +1,6 @@
 
 import messaging.JMSSettings;
 import bank.Bank;
-import client.ClientRequest;
 import loanbroker.LoanBroker;
 import client.LoanTestClient;
 import creditbureau.CreditBureau;
@@ -35,8 +34,8 @@ public class RunMessaging {
 
             // send three requests
             hypotheeker.sendRequest(1, 100000, 24);
-            //hypotheeker.sendRequest(2, 88888, 5);
-            //hypotheeker.sendRequest(3, 100, 5);
+            hypotheeker.sendRequest(2, 88888, 5);
+            hypotheeker.sendRequest(3, 100, 5);
 
         } catch (Exception ex) {
             ex.printStackTrace();
