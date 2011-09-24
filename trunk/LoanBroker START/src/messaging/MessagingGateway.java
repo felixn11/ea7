@@ -27,7 +27,7 @@ public class MessagingGateway {
     private MessageProducer producer;
     private MessageConsumer consumer;
     private Destination destinationSender;
-    private Destination destinationReceiver;
+    public Destination destinationReceiver;
     
     public MessagingGateway(String sendQueue, String receiveQueue) throws NamingException, JMSException {
         // connecting to the JMS 

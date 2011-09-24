@@ -8,6 +8,8 @@ import javax.jms.MessageListener;
 import javax.jms.TextMessage;
 import messaging.JMSSettings;
 import messaging.MessagingGateway;
+import messaging.requestreply.AsynchronousRequestor;
+import messaging.requestreply.IReplyListener;
 
 /**
  *
@@ -15,32 +17,39 @@ import messaging.MessagingGateway;
  */
 abstract class LoanBrokerGateway {
 
-    private MessagingGateway msgGateway;
+    private AsynchronousRequestor<ClientRequest, ClientReply> requestor;
+    //private MessagingGateway msgGateway;
     private ClientSerializer serializer; // for serializing ClientRequest and ClientReply to/from XML
 
     public LoanBrokerGateway(String requestQueue, String replyQueue) throws Exception {
-
-        // create the serializer
+                // create the serializer
         serializer = new ClientSerializer();
-        msgGateway = new MessagingGateway(JMSSettings.LOAN_REQUEST, JMSSettings.LOAN_REPLY);
-        msgGateway.setReceivedMessageListener(getNewMessageListener());
+        requestor = new AsynchronousRequestor<ClientRequest, ClientReply>(requestQueue, replyQueue, serializer);
+       // msgGateway = new MessagingGateway(JMSSettings.LOAN_REQUEST, JMSSettings.LOAN_REPLY);
+       // msgGateway.setReceivedMessageListener(getNewMessageListener());
     }
 
     public void start() {
-        msgGateway.openConnection();
+        requestor.start();
     }
 
     public void applyForLoan(ClientRequest request) {
         try {
-            msgGateway.sendMessage(msgGateway.createMessage(serializer.requestToString(request)));
-        } catch (JMSException ex) {
+            requestor.sendRequest(request, new IReplyListener<ClientRequest, ClientReply>() {
+
+                public void onReply(ClientRequest request, ClientReply reply) {
+                   loanOfferArrived(reply);
+                }
+            });
+            //msgGateway.sendMessage(msgGateway.createMessage(serializer.requestToString(request)));
+        } catch (Exception ex) {
             Logger.getLogger(LoanBrokerGateway.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
     abstract void loanOfferArrived(ClientReply reply);
 
-    private MessageListener getNewMessageListener() {
+ /*   private MessageListener getNewMessageListener() {
         return new MessageListener() {
 
             public void onMessage(Message message) {
@@ -52,5 +61,5 @@ abstract class LoanBrokerGateway {
                 }
             }
         };
-    }
+    }*/
 }
