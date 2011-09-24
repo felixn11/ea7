@@ -22,7 +22,7 @@ public abstract class ClientGateway {
     private MessagingGateway msgGateway;
     private ClientSerializer serializer;
 
-    public ClientGateway() throws NamingException, JMSException {
+    public ClientGateway(String requestQueue) throws NamingException, JMSException {
         serializer = new ClientSerializer();
         msgGateway = new MessagingGateway(JMSSettings.LOAN_REPLY, JMSSettings.LOAN_REQUEST);
         msgGateway.setReceivedMessageListener(getNewMessageListener());

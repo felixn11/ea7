@@ -22,7 +22,7 @@ public abstract class CreditGateway {
     private MessagingGateway msgGateway;
     private CreditSerializer serializer;
 
-    public CreditGateway() throws NamingException, JMSException {
+    public CreditGateway(String requestQueue, String replyQueue) throws NamingException, JMSException {
         serializer = new CreditSerializer();
         msgGateway = new MessagingGateway(JMSSettings.CREDIT_REQUEST, JMSSettings.CREDIT_REPLY);
         msgGateway.setReceivedMessageListener(getNewMessageListener());
