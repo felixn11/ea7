@@ -3,15 +3,10 @@ package loanbroker;
 import client.ClientReply;
 import client.ClientRequest;
 import client.ClientSerializer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageListener;
-import javax.jms.TextMessage;
 import javax.naming.NamingException;
-import messaging.JMSSettings;
-import messaging.MessagingGateway;
+import messaging.requestreply.AsynchronousReplier;
+import messaging.requestreply.IRequestListener;
 
 /**
  *
@@ -19,37 +14,31 @@ import messaging.MessagingGateway;
  */
 public abstract class ClientGateway {
 
-    private MessagingGateway msgGateway;
+    private AsynchronousReplier msgGateway;
     private ClientSerializer serializer;
 
-    public ClientGateway(String requestQueue) throws NamingException, JMSException {
+    public ClientGateway(String requestQueue) throws NamingException, JMSException, Exception {
         serializer = new ClientSerializer();
-        msgGateway = new MessagingGateway(JMSSettings.LOAN_REPLY, JMSSettings.LOAN_REQUEST);
-        msgGateway.setReceivedMessageListener(getNewMessageListener());
-    }
+        msgGateway = new AsynchronousReplier<ClientRequest, ClientReply>(requestQueue, serializer);  
+        
+        msgGateway.setRequestListener(new IRequestListener<ClientRequest>() {
 
-    abstract void onClientRequest(ClientRequest request);
-
-    public void start() {
-        msgGateway.openConnection();
-    }
-
-    public void offerLoan(ClientReply reply) throws JMSException {
-        msgGateway.sendMessage(msgGateway.createMessage(serializer.replyToString(reply)));
-    }
-
-    private MessageListener getNewMessageListener() {
-        return new MessageListener() {
-
-            public void onMessage(Message message) {
-                try {
-                    ClientRequest request = serializer.requestFromString(((TextMessage) message).getText());
-                    onClientRequest(request);
-                } catch (JMSException ex) {
-                    Logger.getLogger(BankGateway.class.getName()).log(Level.SEVERE, null, ex);
-                }
-
+            public void receivedRequest(ClientRequest request) {
+                receivedLoanRequest(request);
             }
-        };
+        });     
     }
+    
+    protected void offerLoan(ClientRequest request, ClientReply reply) throws JMSException {
+        msgGateway.sendReply(request, reply);    
+    }
+    
+    /**
+     * Opens connection to JMS,so that messages can be send and received.
+     */
+    protected void start() throws JMSException {
+       msgGateway.start();
+    }
+    
+    public abstract void receivedLoanRequest(ClientRequest request);
 }

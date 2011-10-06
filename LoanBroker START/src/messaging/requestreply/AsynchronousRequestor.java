@@ -11,13 +11,14 @@ import messaging.MessagingGateway;
 
 /**
  * This class is used for sending requests and receiving replies
- * in asynchronous communication.This class inherits the MessagingGateway,
+ * in asynchronous communication.This class inherits ythe MessagingGateway,
  * i.e., it has access to a MessageSender and MessageReceiver.
  * @param <REQUEST> is the domain class for requests
  * @param <REPLY> is the domain class for replies
  * @author Maja Pesic
  */
 public class AsynchronousRequestor<REQUEST, REPLY> {
+
     /**
      * Class Pair is just used to make it possible to store
      * pairs of REQUEST, ReplyListener in a hashtable!
@@ -32,12 +33,10 @@ public class AsynchronousRequestor<REQUEST, REPLY> {
             this.request = request;
         }
     }
-    
     /**
      * For sending and receiving messages
      */
     private MessagingGateway gateway;
-
     /**
      * contains registered reply listeners for each sent request
      */
@@ -64,7 +63,11 @@ public class AsynchronousRequestor<REQUEST, REPLY> {
         gateway.setReceivedMessageListener(new MessageListener() {
 
             public void onMessage(Message message) {
-                onReply((TextMessage) message);
+                try {
+                    onReply((TextMessage) message);
+                } catch (JMSException ex) {
+                    Logger.getLogger(AsynchronousRequestor.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         });
     }
@@ -90,15 +93,11 @@ public class AsynchronousRequestor<REQUEST, REPLY> {
      * @param request is the request object (a domain class) to be sent
      * @param listener is the listener that will be notified when the reply arrives for this request
      */
-    public synchronized void sendRequest(REQUEST request, IReplyListener<REQUEST, REPLY> listener) {
-        try {
-            TextMessage msg = gateway.createMessage(serializer.requestToString(request));
-            msg.setJMSReplyTo(gateway.destinationReceiver);
-            gateway.sendMessage(msg);
-            listeners.put(msg.getJMSMessageID(), new Pair(listener, request));
-        } catch (Exception ex) {
-            Logger.getLogger(AsynchronousRequestor.class.getName()).log(Level.SEVERE, null, ex);
-        }
+    public synchronized void sendRequest(REQUEST request, IReplyListener<REQUEST, REPLY> listener) throws JMSException {
+        TextMessage msg = gateway.createMessage(serializer.requestToString(request));
+        msg.setJMSReplyTo(gateway.destinationReceiver);
+        gateway.sendMessage(msg);
+        listeners.put(msg.getJMSMessageID(), new Pair(listener, request));
     }
 
     /**
@@ -112,13 +111,10 @@ public class AsynchronousRequestor<REQUEST, REPLY> {
      * 4. unregister the listener
      * @param message the reply message
      */
-    private synchronized void onReply(TextMessage message) {
-        try {
-            Pair pair = listeners.get(message.getJMSCorrelationID());
-            REPLY reply = serializer.replyFromString((message).getText());
-            pair.listener.onReply(pair.request, reply);
-        } catch (Exception ex) {
-            Logger.getLogger(AsynchronousRequestor.class.getName()).log(Level.SEVERE, null, ex);
-        }
+    private synchronized void onReply(TextMessage message) throws JMSException {
+        Pair p = listeners.get(message.getJMSCorrelationID());
+        REPLY reply = serializer.replyFromString(message.getText());
+        p.listener.onReply(p.request, reply);
+        listeners.remove(message.getJMSCorrelationID());
     }
 }
