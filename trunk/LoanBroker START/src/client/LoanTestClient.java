@@ -3,6 +3,7 @@ package client;
 import client.gui.ClientFrame;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.jms.JMSException;
 
 /**
  * This class represents one Clinet Application.
@@ -23,8 +24,8 @@ public class LoanTestClient {
         gateway = new LoanBrokerGateway(requestQueue, replyQueue) {
 
             @Override
-            void loanOfferArrived(ClientReply reply) {
-                processReply(reply);
+            public void loanOfferArrived(ClientRequest request, ClientReply reply) {
+                processLoanOffer(request, reply);
             }
         };
 
@@ -33,7 +34,11 @@ public class LoanTestClient {
 
             @Override
             public void send(ClientRequest request) {
-                processRequest(request);
+                try {
+                    sendRequest(request);
+                } catch (JMSException ex) {
+                    Logger.getLogger(LoanTestClient.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         };
 
@@ -56,20 +61,21 @@ public class LoanTestClient {
         }
     }
 
-    void processRequest(ClientRequest request) {
-        gateway.applyForLoan(request);
-        frame.addRequest(request);
-    }
-
-    void processReply(ClientReply reply) {
-        frame.addReply(null, reply);
+    /**
+     * This message is called whenever a new client reply message arrives.
+     * The message is de-serialized into a ClientReply, and the reply is shown in the GUI.
+     * @param message
+     */
+    private void processLoanOffer(ClientRequest request, ClientReply reply) {
+        frame.addReply(request, reply);
     }
 
     /**
      * Sends new loan request to the LoanBroker.
      * @param request
      */
-    public void sendRequest(int SSN, int amount, int time) {
-        processRequest(new ClientRequest(SSN, amount, time));
+    public void sendRequest(ClientRequest request) throws JMSException {
+        gateway.applyForLoan(request);
+        frame.addRequest(request);
     }
 }

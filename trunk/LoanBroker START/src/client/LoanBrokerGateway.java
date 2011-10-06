@@ -17,49 +17,29 @@ import messaging.requestreply.IReplyListener;
  */
 abstract class LoanBrokerGateway {
 
-    private AsynchronousRequestor<ClientRequest, ClientReply> requestor;
+    private AsynchronousRequestor<ClientRequest, ClientReply> msgGateway;
     //private MessagingGateway msgGateway;
     private ClientSerializer serializer; // for serializing ClientRequest and ClientReply to/from XML
 
     public LoanBrokerGateway(String requestQueue, String replyQueue) throws Exception {
-                // create the serializer
+        // create the serializer
         serializer = new ClientSerializer();
-        requestor = new AsynchronousRequestor<ClientRequest, ClientReply>(requestQueue, replyQueue, serializer);
-       // msgGateway = new MessagingGateway(JMSSettings.LOAN_REQUEST, JMSSettings.LOAN_REPLY);
-       // msgGateway.setReceivedMessageListener(getNewMessageListener());
+        msgGateway = new AsynchronousRequestor<ClientRequest, ClientReply>(requestQueue, replyQueue, serializer);
     }
 
     public void start() {
-        requestor.start();
+        msgGateway.start();
     }
 
-    public void applyForLoan(ClientRequest request) {
-        try {
-            requestor.sendRequest(request, new IReplyListener<ClientRequest, ClientReply>() {
+    protected void applyForLoan(ClientRequest request) throws JMSException {
+        msgGateway.sendRequest(request, new IReplyListener<ClientRequest, ClientReply>() {
 
-                public void onReply(ClientRequest request, ClientReply reply) {
-                   loanOfferArrived(reply);
-                }
-            });
-            //msgGateway.sendMessage(msgGateway.createMessage(serializer.requestToString(request)));
-        } catch (Exception ex) {
-            Logger.getLogger(LoanBrokerGateway.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-
-    abstract void loanOfferArrived(ClientReply reply);
-
- /*   private MessageListener getNewMessageListener() {
-        return new MessageListener() {
-
-            public void onMessage(Message message) {
-                try {
-                    ClientReply reply = serializer.replyFromString(((TextMessage) message).getText());
-                    loanOfferArrived(reply);
-                } catch (JMSException ex) {
-                    Logger.getLogger(LoanBrokerGateway.class.getName()).log(Level.SEVERE, null, ex);
-                }
+            public void onReply(ClientRequest request, ClientReply reply) {
+                System.out.println("The loanbroker received a loan offer from the Creditbank");
+                loanOfferArrived(request, reply);
             }
-        };
-    }*/
+        });
+    }
+
+    public abstract void loanOfferArrived(ClientRequest request, ClientReply reply);
 }

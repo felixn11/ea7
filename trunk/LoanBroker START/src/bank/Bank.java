@@ -5,6 +5,7 @@ import java.text.DecimalFormat;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.jms.JMSException;
 
 /**
  * This class represents one Bank Application.
@@ -33,8 +34,9 @@ public class Bank {
         gateway = new LoanBrokerGateway(bankRequestQueue, bankReplyQueue) {
 
             @Override
-            void receivedQuoteRequest(BankQuoteRequest request) {
-                processRequest(request);
+            public void receivedQuoteRequest(BankQuoteRequest request) {
+                // New request received from the LoanBroker compute reply
+                handleBankQuoteRequest(request);
             }
         };
         this.name = bankName;
@@ -43,10 +45,16 @@ public class Bank {
 
             @Override
             public boolean sendBankReply(BankQuoteRequest request, double interest, int error) {
-                String quoteID = name + "-" + String.valueOf(quoteCounter++);
+                String quoteID = name + "-" + String.valueOf(quoteCounter);
+                quoteCounter++;
                 BankQuoteReply reply = new BankQuoteReply(interest, quoteID, error);
-                processReply(request, reply);
-                return true;
+                try {
+                    gateway.sendQuoteOffer(request, reply);
+                    return true;
+                } catch (JMSException ex) {
+                    Logger.getLogger(Bank.class.getName()).log(Level.SEVERE, null, ex);
+                    return false;
+                }
             }
         };
         java.awt.EventQueue.invokeLater(new Runnable() {
@@ -69,16 +77,21 @@ public class Bank {
         }
     }
 
-    void processReply(BankQuoteRequest request, BankQuoteReply reply) {
-        frame.addReply(request, reply);
-        gateway.sendBankReply(reply);
-    }
-
-    void processRequest(BankQuoteRequest request) {
-        frame.addRequest(request);
-        if (debug_mode) { // only in debug mode send immediately random reply
-            BankQuoteReply reply = computeReply(request);
-            processReply(request, reply);
+    /**
+     * Processes a new request message. Only if the debug_mode is true, this method
+     * randomly generates a reply and sends it back.
+     * @param message
+     */
+    private void handleBankQuoteRequest(BankQuoteRequest request) {
+        try {
+            frame.addRequest(request);
+            if (debug_mode) { // only in debug mode send immediately random reply
+                BankQuoteReply reply = computeReply(request);
+                gateway.sendQuoteOffer(request, reply);
+                frame.addReply(request, reply);
+            }
+        } catch (Exception ex) {
+            Logger.getLogger(Bank.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 

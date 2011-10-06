@@ -2,6 +2,8 @@ package creditbureau;
 
 import creditbureau.gui.CreditFrame;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * This class represents one Credit Agency Application.
@@ -21,8 +23,8 @@ public class CreditBureau {
         gateway = new LoanBrokerGateway(creditRequestQueue, creditReplyQueue) {
 
             @Override
-            void receivedCreditRequest(CreditRequest request) {
-                processRequest(request);
+            public void receivedCreditRequest(CreditRequest request) {
+                handleCreditRequest(request);
             }
         };
 
@@ -37,15 +39,19 @@ public class CreditBureau {
         });
     }
 
-    void processReply(CreditRequest request, CreditReply reply) {
-        gateway.sendCreditHistory(request, reply);
-        frame.addReply(request, reply);
-    }
-
-    void processRequest(CreditRequest request) {
-        CreditReply reply = computeReply(request);
-        frame.addRequest(request);
-        processReply(request, reply);
+    /**
+     * Processes a new request message by randomly generating a reply and sending it back.
+     * @param message the credit request message
+     */
+    private void handleCreditRequest(CreditRequest request) {
+        try {
+            frame.addRequest(request);
+            CreditReply reply = computeReply(request);
+            gateway.sendCreditHistory(request, reply);
+            frame.addReply(request, reply);
+        } catch (Exception ex) {
+            Logger.getLogger(CreditBureau.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     /**

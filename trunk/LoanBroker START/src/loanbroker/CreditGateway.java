@@ -3,53 +3,33 @@ package loanbroker;
 import creditbureau.CreditReply;
 import creditbureau.CreditRequest;
 import creditbureau.CreditSerializer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageListener;
-import javax.jms.TextMessage;
 import javax.naming.NamingException;
-import messaging.JMSSettings;
-import messaging.MessagingGateway;
+import messaging.requestreply.AsynchronousRequestor;
+import messaging.requestreply.IReplyListener;
 
 /**
  *
  * @author Ronny
  */
-public abstract class CreditGateway {
+public class CreditGateway {
 
-    private MessagingGateway msgGateway;
+    private AsynchronousRequestor msgGateway;
     private CreditSerializer serializer;
 
-    public CreditGateway(String requestQueue, String replyQueue) throws NamingException, JMSException {
+    public CreditGateway(String requestQueue, String replyQueue) throws NamingException, JMSException, Exception {
         serializer = new CreditSerializer();
-        msgGateway = new MessagingGateway(JMSSettings.CREDIT_REQUEST, JMSSettings.CREDIT_REPLY);
-        msgGateway.setReceivedMessageListener(getNewMessageListener());
+        msgGateway = new AsynchronousRequestor<CreditRequest, CreditReply>(requestQueue, replyQueue, serializer);        
     }
 
-    abstract void onCreditReply(CreditReply reply);
-
-    public void start() {
-        msgGateway.openConnection();
+     protected void getCreditHistory(CreditRequest request, IReplyListener<CreditRequest, CreditReply> listener) throws JMSException {
+        msgGateway.sendRequest(request, listener);        
     }
-
-    public void getCreditHistory(CreditRequest request) throws JMSException {
-        msgGateway.sendMessage(msgGateway.createMessage(serializer.requestToString(request)));
-    }
-
-    private MessageListener getNewMessageListener() {
-        return new MessageListener() {
-
-            public void onMessage(Message message) {
-                try {
-                    CreditReply reply = serializer.replyFromString(((TextMessage) message).getText());
-                    onCreditReply(reply);
-                } catch (JMSException ex) {
-                    Logger.getLogger(BankGateway.class.getName()).log(Level.SEVERE, null, ex);
-                }
-
-            }
-        };
+    
+    /**
+     * Opens connection to JMS,so that messages can be send and received.
+     */
+    protected void start() throws JMSException {
+       msgGateway.start();
     }
 }

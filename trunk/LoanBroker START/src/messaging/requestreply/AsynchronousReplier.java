@@ -1,10 +1,14 @@
 package messaging.requestreply;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.TextMessage;
 import java.util.Hashtable;
 import javax.jms.Destination;
 import javax.jms.MessageListener;
+import messaging.JMSSettings;
 import messaging.MessagingGateway;
 
 /**
@@ -49,7 +53,11 @@ public class AsynchronousReplier<REQUEST, REPLY> {
         gateway.setReceivedMessageListener(new MessageListener() {
 
             public void onMessage(Message message) {
-                onRequest((TextMessage) message);
+                try {
+                    onRequest((TextMessage) message);
+                } catch (JMSException ex) {
+                    Logger.getLogger(AsynchronousReplier.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         });
         this.activeRequests = new Hashtable<REQUEST, Message>();
@@ -78,8 +86,10 @@ public class AsynchronousReplier<REQUEST, REPLY> {
      * 3. notify the listener about the REQUEST arrival
      * @param message the incomming message containing the request
      */
-    private synchronized void onRequest(TextMessage message) {
-             //TODO
+    private synchronized void onRequest(TextMessage message) throws JMSException {        
+             REQUEST request =  serializer.requestFromString(message.getText());             
+             activeRequests.put(request, message);
+             requestListener.receivedRequest(request);
     }
 
     /**
@@ -95,8 +105,13 @@ public class AsynchronousReplier<REQUEST, REPLY> {
      * @param reply to the request
      * @return  true if the reply is sent succefully; false if sending reply fails
      */
-    public synchronized boolean sendReply(REQUEST request, REPLY reply) {
-        //TODO
+    public synchronized boolean sendReply(REQUEST request, REPLY reply) throws JMSException {
+        Message requestMsg = activeRequests.get(request);
+        String tempReplyMsg = serializer.replyToString(reply);
+        TextMessage replyMsg = gateway.createMessage(tempReplyMsg);
+        replyMsg.setJMSCorrelationID(requestMsg.getJMSMessageID()); // corrid
+        Destination dest = requestMsg.getJMSReplyTo();// retourn address
+        gateway.sendMessage(dest, replyMsg);
         return true;
     }
 }
