@@ -1,13 +1,6 @@
 package client;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageListener;
-import javax.jms.TextMessage;
-import messaging.JMSSettings;
-import messaging.MessagingGateway;
+import java.util.logging.*;
 import messaging.requestreply.AsynchronousRequestor;
 import messaging.requestreply.IReplyListener;
 
@@ -17,9 +10,8 @@ import messaging.requestreply.IReplyListener;
  */
 abstract class LoanBrokerGateway {
 
-    private AsynchronousRequestor<ClientRequest, ClientReply> msgGateway;
-    //private MessagingGateway msgGateway;
     private ClientSerializer serializer; // for serializing ClientRequest and ClientReply to/from XML
+    private AsynchronousRequestor<ClientRequest, ClientReply> msgGateway;
 
     public LoanBrokerGateway(String requestQueue, String replyQueue) throws Exception {
         // create the serializer
@@ -31,15 +23,18 @@ abstract class LoanBrokerGateway {
         msgGateway.start();
     }
 
-    protected void applyForLoan(ClientRequest request) throws JMSException {
-        msgGateway.sendRequest(request, new IReplyListener<ClientRequest, ClientReply>() {
+    public void applyForLoan(ClientRequest request) {
+        try {
+            msgGateway.sendRequest(request, new IReplyListener<ClientRequest, ClientReply>() {
 
-            public void onReply(ClientRequest request, ClientReply reply) {
-                System.out.println("The loanbroker received a loan offer from the Creditbank");
-                loanOfferArrived(request, reply);
-            }
-        });
+                public void onReply(ClientRequest request, ClientReply reply) {
+                    loanOfferArrived(request, reply);
+                }
+            });
+        } catch (Exception ex) {
+            Logger.getLogger(LoanBrokerGateway.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
-    public abstract void loanOfferArrived(ClientRequest request, ClientReply reply);
+    abstract void loanOfferArrived(ClientRequest request, ClientReply reply);
 }

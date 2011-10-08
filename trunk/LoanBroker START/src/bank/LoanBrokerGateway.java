@@ -1,14 +1,8 @@
 package bank;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageListener;
-import javax.jms.TextMessage;
-import messaging.JMSSettings;
-import messaging.MessagingGateway;
+import java.util.logging.*;
 import messaging.requestreply.AsynchronousReplier;
+import messaging.requestreply.IRequestListener;
 
 /**
  *
@@ -20,19 +14,28 @@ abstract class LoanBrokerGateway {
     private BankSerializer serializer; // serializer BankQuoteRequest BankQuoteReply to/from XML:
 
     public LoanBrokerGateway(String bankRequestQueue, String bankReplyQueue) throws Exception {
-
         // create the serializer
         serializer = new BankSerializer();
-        msgGateway = new AsynchronousReplier<BankQuoteRequest, BankQuoteReply>(bankReplyQueue, serializer);        
+        msgGateway = new AsynchronousReplier<BankQuoteRequest, BankQuoteReply>(bankReplyQueue, serializer);
+        msgGateway.setRequestListener(new IRequestListener<BankQuoteRequest>() {
+
+            public void receivedRequest(BankQuoteRequest request) {
+                receivedQuoteRequest(request);
+            }
+        });
     }
 
     public void start() {
         msgGateway.start();
     }
 
-    protected void sendQuoteOffer(BankQuoteRequest request, BankQuoteReply reply) throws JMSException {
-        msgGateway.sendReply(request, reply); 
+    protected void sendQuoteOffer(BankQuoteRequest request, BankQuoteReply reply){
+        try {
+            msgGateway.sendReply(request, reply);
+        } catch (Exception ex) {
+            Logger.getLogger(LoanBrokerGateway.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }        
     
-    public abstract void receivedQuoteRequest(BankQuoteRequest request);
+    abstract void receivedQuoteRequest(BankQuoteRequest request);
 }

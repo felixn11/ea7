@@ -45,14 +45,14 @@ public class LoanBroker {
         clientGateway = new ClientGateway(clientRequestQueue) {
 
             @Override
-            public void receivedLoanRequest(ClientRequest request) {
-                onClientRequest(request);
+            public void onClientRequest(ClientRequest request) {
+                LoanBroker.this.onClientRequest(request);
                 
             }
         };
 
-        creditGateway = new CreditGateway(creditRequestQueue, creditReplyQueue);
-        bankGateway = new BankGateway(bankRequestQueue,bankReplyQueue);
+        creditGateway = new CreditGateway(creditReplyQueue, creditRequestQueue);
+        bankGateway = new BankGateway(bankReplyQueue, bankRequestQueue);
 
         java.awt.EventQueue.invokeLater(new Runnable() {
 
@@ -70,7 +70,7 @@ public class LoanBroker {
      */
     private void onClientRequest(ClientRequest request) {
         try {
-
+            System.out.println("Loanbroaker received request from Client");
             final ClientRequestProcess p = new ClientRequestProcess(request, creditGateway, clientGateway, bankGateway) {
 
                 @Override

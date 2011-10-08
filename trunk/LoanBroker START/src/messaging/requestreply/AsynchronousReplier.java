@@ -8,7 +8,6 @@ import javax.jms.TextMessage;
 import java.util.Hashtable;
 import javax.jms.Destination;
 import javax.jms.MessageListener;
-import messaging.JMSSettings;
 import messaging.MessagingGateway;
 
 /**
@@ -49,7 +48,7 @@ public class AsynchronousReplier<REQUEST, REPLY> {
     public AsynchronousReplier(String requestReceiverQueue, IRequestReplySerializer<REQUEST, REPLY> serializer) throws Exception {
         super();
         this.serializer = serializer;
-        gateway = new MessagingGateway(null, requestReceiverQueue);
+        gateway = new MessagingGateway(requestReceiverQueue);
         gateway.setReceivedMessageListener(new MessageListener() {
 
             public void onMessage(Message message) {
@@ -60,7 +59,7 @@ public class AsynchronousReplier<REQUEST, REPLY> {
                 }
             }
         });
-        this.activeRequests = new Hashtable<REQUEST, Message>();
+        activeRequests = new Hashtable<REQUEST, Message>();
     }
 
     /**
@@ -86,10 +85,10 @@ public class AsynchronousReplier<REQUEST, REPLY> {
      * 3. notify the listener about the REQUEST arrival
      * @param message the incomming message containing the request
      */
-    private synchronized void onRequest(TextMessage message) throws JMSException {        
-             REQUEST request =  serializer.requestFromString(message.getText());             
-             activeRequests.put(request, message);
-             requestListener.receivedRequest(request);
+    private synchronized void onRequest(TextMessage message) throws JMSException {
+        REQUEST request = serializer.requestFromString(message.getText());
+        activeRequests.put(request, message);
+        requestListener.receivedRequest(request);
     }
 
     /**

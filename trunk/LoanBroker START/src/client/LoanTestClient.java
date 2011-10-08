@@ -24,8 +24,8 @@ public class LoanTestClient {
         gateway = new LoanBrokerGateway(requestQueue, replyQueue) {
 
             @Override
-            public void loanOfferArrived(ClientRequest request, ClientReply reply) {
-                processLoanOffer(request, reply);
+            void loanOfferArrived(ClientRequest request, ClientReply reply) {
+                processReply(request, reply);
             }
         };
 
@@ -61,12 +61,14 @@ public class LoanTestClient {
         }
     }
 
-    /**
-     * This message is called whenever a new client reply message arrives.
-     * The message is de-serialized into a ClientReply, and the reply is shown in the GUI.
-     * @param message
-     */
-    private void processLoanOffer(ClientRequest request, ClientReply reply) {
+    void processRequest(ClientRequest request) {
+        System.out.println("Client sent request to LoanBroker");
+        gateway.applyForLoan(request);
+        frame.addRequest(request);
+    }
+
+    void processReply(ClientRequest request, ClientReply reply) {
+        System.out.println("Client received reply from LoanBroker");
         frame.addReply(request, reply);
     }
 
