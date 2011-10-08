@@ -21,10 +21,9 @@ public class CreditBureau {
     public CreditBureau(String creditRequestQueue, String creditReplyQueue) throws Exception {
         super();
         gateway = new LoanBrokerGateway(creditRequestQueue, creditReplyQueue) {
-
             @Override
             public void receivedCreditRequest(CreditRequest request) {
-                handleCreditRequest(request);
+                processRequest(request);
             }
         };
 
@@ -38,20 +37,18 @@ public class CreditBureau {
             }
         });
     }
+    
+    void processRequest(CreditRequest request) {
+        System.out.println("Creditbureau received request from LoanBroker");
+        CreditReply reply = computeReply(request);
+        frame.addRequest(request);
+        processReply(request, reply);
+    }
 
-    /**
-     * Processes a new request message by randomly generating a reply and sending it back.
-     * @param message the credit request message
-     */
-    private void handleCreditRequest(CreditRequest request) {
-        try {
-            frame.addRequest(request);
-            CreditReply reply = computeReply(request);
-            gateway.sendCreditHistory(request, reply);
-            frame.addReply(request, reply);
-        } catch (Exception ex) {
-            Logger.getLogger(CreditBureau.class.getName()).log(Level.SEVERE, null, ex);
-        }
+    void processReply(CreditRequest request, CreditReply reply) {
+         System.out.println("Creditbureau sent reply to LoanBroker");
+        gateway.sendCreditHistory(request, reply);
+        frame.addReply(request, reply);
     }
 
     /**

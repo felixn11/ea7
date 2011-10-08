@@ -63,11 +63,7 @@ public class AsynchronousRequestor<REQUEST, REPLY> {
         gateway.setReceivedMessageListener(new MessageListener() {
 
             public void onMessage(Message message) {
-                try {
-                    onReply((TextMessage) message);
-                } catch (JMSException ex) {
-                    Logger.getLogger(AsynchronousRequestor.class.getName()).log(Level.SEVERE, null, ex);
-                }
+                onReply((TextMessage) message);
             }
         });
     }
@@ -111,10 +107,14 @@ public class AsynchronousRequestor<REQUEST, REPLY> {
      * 4. unregister the listener
      * @param message the reply message
      */
-    private synchronized void onReply(TextMessage message) throws JMSException {
-        Pair p = listeners.get(message.getJMSCorrelationID());
-        REPLY reply = serializer.replyFromString(message.getText());
-        p.listener.onReply(p.request, reply);
-        listeners.remove(message.getJMSCorrelationID());
+    private synchronized void onReply(TextMessage message) {
+        try {
+            Pair pair = listeners.get(message.getJMSCorrelationID());
+            REPLY reply = serializer.replyFromString(message.getText());
+            pair.listener.onReply(pair.request, reply);
+            listeners.remove(message.getJMSCorrelationID());
+        } catch (Exception ex) {
+            Logger.getLogger(AsynchronousRequestor.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 }

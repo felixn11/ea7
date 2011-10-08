@@ -21,6 +21,8 @@ public class RunMessaging {
 
             // create a Client Application
             LoanTestClient hypotheeker = new LoanTestClient("The Hypotheker", JMSSettings.LOAN_REQUEST, JMSSettings.LOAN_REPLY);
+            // create a Client Application
+            LoanTestClient hypotheekvisie = new LoanTestClient("Hypotheekvisie", JMSSettings.LOAN_REQUEST, JMSSettings.LOAN_REPLY_2);
              // create the CreditBuerau Application
             CreditBureau creditBuerau = new CreditBureau(JMSSettings.CREDIT_REQUEST, JMSSettings.CREDIT_REPLY);
 
@@ -32,6 +34,7 @@ public class RunMessaging {
             creditBuerau.start();
             raboBank.start();
             hypotheeker.start();
+            hypotheekvisie.start();
 
             // send three requests
             hypotheeker.sendRequest(new ClientRequest(1, 100000, 24));

@@ -3,8 +3,7 @@ package loanbroker;
 import client.ClientReply;
 import client.ClientRequest;
 import client.ClientSerializer;
-import javax.jms.JMSException;
-import javax.naming.NamingException;
+import java.util.logging.*;
 import messaging.requestreply.AsynchronousReplier;
 import messaging.requestreply.IRequestListener;
 
@@ -14,31 +13,32 @@ import messaging.requestreply.IRequestListener;
  */
 public abstract class ClientGateway {
 
-    private AsynchronousReplier msgGateway;
     private ClientSerializer serializer;
+    private AsynchronousReplier<ClientRequest, ClientReply> msgGateway;
 
-    public ClientGateway(String requestQueue) throws NamingException, JMSException, Exception {
+    public ClientGateway(String requestQueue) throws Exception {
+        // create the serializer
         serializer = new ClientSerializer();
-        msgGateway = new AsynchronousReplier<ClientRequest, ClientReply>(requestQueue, serializer);  
-        
+        msgGateway = new AsynchronousReplier<ClientRequest, ClientReply>(requestQueue, serializer);
         msgGateway.setRequestListener(new IRequestListener<ClientRequest>() {
 
             public void receivedRequest(ClientRequest request) {
-                receivedLoanRequest(request);
+                onClientRequest(request);
             }
-        });     
+        });
     }
-    
-    protected void offerLoan(ClientRequest request, ClientReply reply) throws JMSException {
-        msgGateway.sendReply(request, reply);    
+
+    public void start() {
+        msgGateway.start();
     }
-    
-    /**
-     * Opens connection to JMS,so that messages can be send and received.
-     */
-    protected void start() throws JMSException {
-       msgGateway.start();
+
+    abstract void onClientRequest(ClientRequest request);
+
+    public void offerLoan(ClientRequest request, ClientReply reply) {
+        try {
+            msgGateway.sendReply(request, reply);
+        } catch (Exception ex) {
+            Logger.getLogger(ClientGateway.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
-    
-    public abstract void receivedLoanRequest(ClientRequest request);
 }

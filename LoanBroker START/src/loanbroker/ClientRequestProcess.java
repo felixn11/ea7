@@ -16,7 +16,7 @@ import messaging.requestreply.IReplyListener;
  * @author Maja Pesic
  */
 abstract class ClientRequestProcess {
-    
+
     private ClientRequest clientRequest = null;
     private CreditRequest creditRequest = null;
     private CreditReply creditReply = null;
@@ -43,7 +43,7 @@ abstract class ClientRequestProcess {
         this.clientGateway = clientGateway;
         this.bankGateway = bankGateway;
         this.creditReplyListener = new IReplyListener<CreditRequest, CreditReply>() {
-            
+
             public void onReply(CreditRequest request, CreditReply reply) {
                 try {
                     onCreditReply(reply);
@@ -53,7 +53,7 @@ abstract class ClientRequestProcess {
             }
         };
         this.bankReplyListener = new IReplyListener<BankQuoteRequest, BankQuoteReply>() {
-            
+
             public void onReply(BankQuoteRequest request, BankQuoteReply reply) {
                 try {
                     onBankQuoteReply(reply);
@@ -64,7 +64,7 @@ abstract class ClientRequestProcess {
         };
         requestCreditHistory();
     }
-    
+
     public ClientRequest getClientRequest() {
         return clientRequest;
     }
@@ -77,6 +77,7 @@ abstract class ClientRequestProcess {
      */
     private void requestCreditHistory() {
         try {
+            System.out.println("Loanbroaker sent request to Creditbureau");
             CreditRequest credit = createCreditRequest(clientRequest);
             creditGateway.getCreditHistory(credit, creditReplyListener);
         } catch (Exception ex) {
@@ -92,12 +93,14 @@ abstract class ClientRequestProcess {
      * 3. send the bankRequest and register the method onBankQuoteReply as the listener for the reply
      */
     public void onCreditReply(CreditReply reply) throws JMSException {
+        System.out.println("Loanbroaker received reply from Creditbureau");
+        creditReply = reply;
         notifyReceivedCreditReply(clientRequest, reply);
         BankQuoteRequest bankRequest = createBankRequest(clientRequest, creditReply);
         bankGateway.getBankQuote(bankRequest, bankReplyListener);
-        onBankQuoteReply(bankQuoteReply);
+        //onBankQuoteReply(bankQuoteReply);
     }
-    
+
     abstract void notifyReceivedCreditReply(ClientRequest clientRequest, CreditReply reply);
 
     /**
@@ -109,15 +112,15 @@ abstract class ClientRequestProcess {
      * 4. call method notifySentClientReply to notify the LoanBroker that this process has finished
      */
     public void onBankQuoteReply(BankQuoteReply reply) throws JMSException {
+        System.out.println("Loanbroaker received reply from Bank");
         notifyReceivedBankReply(clientRequest, reply);
         ClientReply cReply = createClientReply(reply);
         clientGateway.offerLoan(clientRequest, cReply);
         notifySentClientReply(this);
-        
     }
-    
+
     abstract void notifyReceivedBankReply(ClientRequest clientRequest, BankQuoteReply reply);
-    
+
     abstract void notifySentClientReply(ClientRequestProcess process);
 
     /**
