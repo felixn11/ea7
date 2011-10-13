@@ -43,7 +43,7 @@ public class BanksSenderRouter {
         }
     }
 
-    Iterable<ISender> getEligibleBanks(BankQuoteRequest request) {
+    public Iterable<ISender> getEligibleBanks(BankQuoteRequest request) {
         ArrayList<ISender> e = new ArrayList<ISender>();
         for (BankSender bank : banks) {
             if (bank.canHandleRequest(request)) {

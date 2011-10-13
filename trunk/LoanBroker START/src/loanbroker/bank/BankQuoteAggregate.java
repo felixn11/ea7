@@ -21,7 +21,7 @@ public class BankQuoteAggregate {
     private BankQuoteReply bestReply = null;
     private IReplyListener<BankQuoteRequest, BankQuoteReply> replyListener;
 
-    BankQuoteAggregate(BankQuoteRequest request, int nrExpectedReplies, IReplyListener<BankQuoteRequest, BankQuoteReply> listener) {
+    public BankQuoteAggregate(BankQuoteRequest request, int nrExpectedReplies, IReplyListener<BankQuoteRequest, BankQuoteReply> listener) {
         super();
         this.request = request;
         this.replies = new ArrayList<BankQuoteReply>();
@@ -38,11 +38,15 @@ public class BankQuoteAggregate {
      * 2. if this reply is the best (i.e., the lowest interest), assign it to the bestReply
      * 3. return true if this is the last expected reply (use nrExpectedReplies and collection replies)
      */
-    boolean addReply(BankQuoteReply reply) {
-        return false;
+    public boolean addReply(BankQuoteReply reply) {
+        replies.add(reply);
+        if (replies.size() == 1 || reply.getInterest() < bestReply.getInterest()) {
+            bestReply = reply;
+        }
+        return replies.size() == nrExpectedReplies;
     }
 
-    void notifyListener() {
+    public void notifyListener() {
         if (replyListener != null) {
             replyListener.onReply(request, bestReply);
         }
