@@ -25,7 +25,7 @@ public class MessagingGateway {
     }
 
     public MessagingGateway(String receiveQueue) throws NamingException, JMSException {
-        receiver = MessagingFactory.createReceiver(receiveQueue);        
+        receiver = MessagingFactory.createReceiver(receiveQueue);
     }
 
     public boolean sendMessage(Message msg) {

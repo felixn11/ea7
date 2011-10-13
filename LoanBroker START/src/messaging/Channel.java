@@ -33,7 +33,11 @@ public class Channel implements IChannel {
         connection = connectionFactory.createConnection();
         session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
-        destination = (Destination) jndiContext.lookup(destinationName);
+        if (destinationName.equals("")) {
+            destination = null;
+        } else {
+            destination = (Destination) jndiContext.lookup(destinationName);
+        }
     }
 
     public Destination getDestination() {

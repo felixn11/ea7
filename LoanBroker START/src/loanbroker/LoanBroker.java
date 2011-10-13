@@ -68,7 +68,8 @@ public class LoanBroker {
      * It generates a CreditRequest and sends it to the CreditBureau.
      * @param message the incomming message containng the ClientRequest
      */
-    private void onClientRequest(ClientRequest request) {
+    private void onClientRequest(ClientRequest request) { 
+        
         try {
             System.out.println("Loanbroaker received request from Client");
             final ClientRequestProcess p = new ClientRequestProcess(request, creditGateway, clientGateway, bankGateway) {
@@ -92,7 +93,7 @@ public class LoanBroker {
             frame.addObject(null, request);
         } catch (Exception ex) {
             Logger.getLogger(LoanBroker.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        }       
     }
 
     /**
@@ -102,5 +103,9 @@ public class LoanBroker {
         clientGateway.start();
         creditGateway.start();
         bankGateway.start();
+    }
+    
+    public void addBank(String destination, String expression) {
+        bankGateway.addBank(destination, expression);
     }
 }

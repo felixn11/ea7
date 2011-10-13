@@ -16,8 +16,10 @@ public class RunMessaging {
 
     public static void main(String[] args) {
         try {
+            String RABO_BANK = "#{amount} >= 10000 && #{amount} < 750000 && #{credit} >= 600 && #{history} >= 8";
             // create a LoanBroker middleware
             LoanBroker broker = new LoanBroker(JMSSettings.LOAN_REQUEST, JMSSettings.CREDIT_REQUEST, JMSSettings.CREDIT_REPLY, JMSSettings.BANK_1, JMSSettings.BANK_REPLY);
+            broker.addBank(JMSSettings.BANK_1, RABO_BANK);
 
             // create a Client Application
             LoanTestClient hypotheeker = new LoanTestClient("The Hypotheker", JMSSettings.LOAN_REQUEST, JMSSettings.LOAN_REPLY);
@@ -38,8 +40,8 @@ public class RunMessaging {
 
             // send three requests
             hypotheeker.sendRequest(new ClientRequest(1, 100000, 24));
-            hypotheeker.sendRequest(new ClientRequest(2, 88888, 5));
-            hypotheeker.sendRequest(new ClientRequest(3, 100, 5));
+           // hypotheeker.sendRequest(new ClientRequest(2, 88888, 5));
+           // hypotheeker.sendRequest(new ClientRequest(3, 100, 5));
 
         } catch (Exception ex) {
             ex.printStackTrace();

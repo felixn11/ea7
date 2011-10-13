@@ -4,20 +4,23 @@
  */
 package loanbroker;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.jms.JMSException;
 import loanbroker.bank.BankQuoteAggregate;
 import bank.BankQuoteReply;
 import bank.BankQuoteRequest;
 import bank.BankSerializer;
+import java.awt.geom.AffineTransform;
 import java.util.Hashtable;
 import javax.jms.Message;
 import javax.jms.MessageListener;
 import javax.jms.TextMessage;
 import loanbroker.bank.BanksSenderRouter;
 import messaging.IReceiver;
+import messaging.ISender;
 import messaging.MessagingFactory;
 import messaging.requestreply.IReplyListener;
-
 
 /**
  * 
@@ -27,12 +30,9 @@ public class BankGateway {
 
     private static final String AGGREGATION_CORRELATION = "aggregation";
     private int aggregateCounter = 0; // counting bank requests
-
     private BanksSenderRouter sender; // separate sender for each bank
     private IReceiver receiver; // one receiver for all banks
-
     private BankSerializer serializer; // serializing bank requests and replies
-
     private Hashtable<Integer, BankQuoteAggregate> replyAggregate; // storing one aggregate (of replies) for each BankQuoteRequests
 
     /**
@@ -74,7 +74,18 @@ public class BankGateway {
      * @param msg the message that has just been received
      */
     private synchronized void messageReceived(TextMessage msg) {
-       
+        try {
+            int agrcor = msg.getIntProperty(AGGREGATION_CORRELATION);
+            BankQuoteAggregate agr = replyAggregate.get(agrcor);
+            BankQuoteReply reply = serializer.replyFromString(msg.getText());
+            if (agr.addReply(reply)) {
+                agr.notifyListener();
+                replyAggregate.remove(agrcor);
+            }
+
+        } catch (JMSException ex) {
+            Logger.getLogger(BankGateway.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     /**
@@ -96,7 +107,32 @@ public class BankGateway {
      * @param replyListener
      */
     public synchronized void sendRequest(BankQuoteRequest request, IReplyListener<BankQuoteRequest, BankQuoteReply> listener) {
-      
+        try {
+            String req = serializer.requestToString(request);
+            Iterable<ISender> eligibleBanks = sender.getEligibleBanks(request);
+            int bankCounter = 0;
+            while (eligibleBanks.iterator().hasNext()) {
+                eligibleBanks.iterator().next();
+                bankCounter++;
+            }
+            for (ISender b : eligibleBanks) {
+                TextMessage msg = b.createMessage(req);
+                msg.setJMSReplyTo(receiver.getDestination());
+                msg.setIntProperty(AGGREGATION_CORRELATION, aggregateCounter);
+                b.sendMessage(msg);
+            }
+            if (bankCounter > 0) {
+                BankQuoteAggregate bankQuoteAggregate = new BankQuoteAggregate(request, bankCounter, listener);
+                replyAggregate.put(aggregateCounter, bankQuoteAggregate);
+                aggregateCounter++;
+            } else {
+                BankQuoteReply bankQuoteReply = new BankQuoteReply(0, "There are no eligible banks for this loan.", 10);
+                listener.onReply(request, bankQuoteReply);
+            }
+
+        } catch (Exception ex) {
+            Logger.getLogger(BankGateway.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     public void start() throws JMSException {
