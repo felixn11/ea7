@@ -1,6 +1,7 @@
 package client;
 
 import java.util.logging.*;
+import javax.jms.JMSException;
 import messaging.requestreply.AsynchronousRequestor;
 import messaging.requestreply.IReplyListener;
 
@@ -19,7 +20,7 @@ abstract class LoanBrokerGateway {
         msgGateway = new AsynchronousRequestor<ClientRequest, ClientReply>(requestQueue, replyQueue, serializer);
     }
 
-    public void start() {
+    public void start() throws JMSException{
         msgGateway.start();
     }
 

@@ -72,7 +72,7 @@ public class AsynchronousRequestor<REQUEST, REPLY> {
      * Opens JMS connection in order to be able to send messages and to start
      * receiving messages.
      */
-    public void start() {
+    public void start() throws JMSException {
         gateway.openConnection();
     }
 
@@ -91,7 +91,7 @@ public class AsynchronousRequestor<REQUEST, REPLY> {
      */
     public synchronized void sendRequest(REQUEST request, IReplyListener<REQUEST, REPLY> listener) throws JMSException {
         TextMessage msg = gateway.createMessage(serializer.requestToString(request));
-        msg.setJMSReplyTo(gateway.destinationReceiver);
+        msg.setJMSReplyTo(gateway.getReceiverDestination());
         gateway.sendMessage(msg);
         listeners.put(msg.getJMSMessageID(), new Pair(listener, request));
     }
