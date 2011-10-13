@@ -4,6 +4,7 @@ import client.ClientReply;
 import client.ClientRequest;
 import client.ClientSerializer;
 import java.util.logging.*;
+import javax.jms.JMSException;
 import messaging.requestreply.AsynchronousReplier;
 import messaging.requestreply.IRequestListener;
 
@@ -28,7 +29,7 @@ public abstract class ClientGateway {
         });
     }
 
-    public void start() {
+    public void start() throws JMSException {
         msgGateway.start();
     }
 

@@ -73,7 +73,7 @@ public class AsynchronousReplier<REQUEST, REPLY> {
     /**
      * Opens the jms connection of the Messaging Gateway in order to start sending/receiving requests.
      */
-    public void start() {
+    public void start() throws JMSException {
         gateway.openConnection();
     }
 

@@ -1,6 +1,7 @@
 package creditbureau;
 
 import java.util.logging.*;
+import javax.jms.JMSException;
 import messaging.requestreply.AsynchronousReplier;
 import messaging.requestreply.IRequestListener;
 
@@ -25,7 +26,7 @@ abstract class LoanBrokerGateway {
         });
     }
 
-    public void start() {
+    public void start() throws JMSException {
         msgGateway.start();
     }
 

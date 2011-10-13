@@ -4,6 +4,7 @@ import creditbureau.gui.CreditFrame;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.jms.JMSException;
 
 /**
  * This class represents one Credit Agency Application.
@@ -68,7 +69,7 @@ public class CreditBureau {
     /**
      * Opens connestion to JMS,so that messages can be send and received.
      */
-    public void start() {
+    public void start() throws JMSException {
         gateway.start();
     }
 }

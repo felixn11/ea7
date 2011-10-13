@@ -52,7 +52,7 @@ public class LoanBroker {
         };
 
         creditGateway = new CreditGateway(creditReplyQueue, creditRequestQueue);
-        bankGateway = new BankGateway(bankReplyQueue, bankRequestQueue);
+        bankGateway = new BankGateway(bankRequestQueue);
 
         java.awt.EventQueue.invokeLater(new Runnable() {
 

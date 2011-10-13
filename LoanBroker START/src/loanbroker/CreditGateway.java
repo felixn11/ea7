@@ -27,7 +27,7 @@ public class CreditGateway {
     /**
      * Opens connection to JMS,so that messages can be send and received.
      */
-    public void start() {
+    public void start() throws JMSException {
         msgGateway.start();
     }
 

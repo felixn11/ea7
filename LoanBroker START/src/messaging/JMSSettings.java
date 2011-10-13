@@ -16,7 +16,7 @@ public class JMSSettings {
     public static final String CONNECTION = "queueConnectionFactory";
     public static final String LOAN_REQUEST = "loanRequestQueue";
     public static final String LOAN_REPLY = "loanReplyQueue";
-    public static final String LOAN_REPLY_2 = "loan2ReplyQueue";
+    public static final String LOAN_REPLY_2 = "loanReply2Queue";
     public static final String CREDIT_REQUEST = "creditRequestQueue";
     public static final String CREDIT_REPLY = "creditReplyQueue";
     public static final String BANK_1 = "bank1Queue";

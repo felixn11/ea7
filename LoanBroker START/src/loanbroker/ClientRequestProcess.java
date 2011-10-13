@@ -97,7 +97,7 @@ abstract class ClientRequestProcess {
         creditReply = reply;
         notifyReceivedCreditReply(clientRequest, reply);
         BankQuoteRequest bankRequest = createBankRequest(clientRequest, creditReply);
-        bankGateway.getBankQuote(bankRequest, bankReplyListener);
+        bankGateway.sendRequest(bankRequest, bankReplyListener);
         //onBankQuoteReply(bankQuoteReply);
     }
 

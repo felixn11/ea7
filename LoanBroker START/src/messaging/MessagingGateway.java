@@ -2,18 +2,11 @@ package messaging;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
-import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
-import javax.jms.MessageProducer;
-import javax.jms.Session;
 import javax.jms.TextMessage;
-import javax.naming.Context;
-import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
 /**
@@ -21,76 +14,60 @@ import javax.naming.NamingException;
  * @author Ronny
  */
 public class MessagingGateway {
-    
-    private Connection connection;
-    private Session session;
-    private MessageProducer producer;
-    private MessageConsumer consumer;
-    private Destination destinationSender;
-    public Destination destinationReceiver;
-    
+
+    private IReceiver receiver;
+    private ISender sender;
+
     public MessagingGateway(String sendQueue, String receiveQueue) throws NamingException, JMSException {
         // connecting to the JMS 
-        Context jndiContext = new InitialContext();
-        ConnectionFactory connectionFactory = (ConnectionFactory) jndiContext.lookup(JMSSettings.CONNECTION);
-        
-        connection = connectionFactory.createConnection();
-        session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        
-        destinationSender = (Destination) jndiContext.lookup(sendQueue);
-        destinationReceiver = (Destination) jndiContext.lookup(receiveQueue);
-        
-        producer = session.createProducer(destinationSender);
-        consumer = session.createConsumer(destinationReceiver);
+        receiver = MessagingFactory.createReceiver(receiveQueue);
+        sender = MessagingFactory.createSender(sendQueue);
     }
-    
+
     public MessagingGateway(String receiveQueue) throws NamingException, JMSException {
-        // connecting to the JMS 
-        Context jndiContext = new InitialContext();
-        ConnectionFactory connectionFactory = (ConnectionFactory) jndiContext.lookup(JMSSettings.CONNECTION);
-        
-        connection = connectionFactory.createConnection();
-        session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        
-        destinationReceiver = (Destination) jndiContext.lookup(receiveQueue);
-        
-        producer = session.createProducer(null);
-        consumer = session.createConsumer(destinationReceiver);
+        receiver = MessagingFactory.createReceiver(receiveQueue);        
     }
-    
+
     public boolean sendMessage(Message msg) {
         try {
-            producer.send(msg);
+            sender.sendMessage(msg);
             return true;
         } catch (JMSException ex) {
-            ex.printStackTrace();
+            Logger.getLogger(MessagingGateway.class.getName()).log(Level.SEVERE, null, ex);
             return false;
         }
     }
-    
+
     public boolean sendMessage(Destination destination, Message msg) {
         try {
-            producer.send(destination, msg);
+            sender.sendMessage(msg, destination);
             return true;
         } catch (JMSException ex) {
-            ex.printStackTrace();
+            Logger.getLogger(MessagingGateway.class.getName()).log(Level.SEVERE, null, ex);
             return false;
         }
     }
-    
+
     public TextMessage createMessage(String body) throws JMSException {
-        return session.createTextMessage(body);
+        return sender.createMessage(body);
     }
-    
+
     public void setReceivedMessageListener(MessageListener listener) throws JMSException {
-        consumer.setMessageListener(listener);
+        receiver.setMessageListener(listener);
     }
-    
-    public void openConnection() {
-        try {
-            connection.start();
-        } catch (JMSException ex) {
-            ex.printStackTrace();
+
+    public Destination getReceiverDestination() {
+        return receiver.getDestination();
+    }
+
+    public Destination getSenderDestination() {
+        return sender.getDestination();
+    }
+
+    public void openConnection() throws JMSException {
+        receiver.openConnection();
+        if (sender != null) {
+            sender.openConnection();
         }
     }
 }
