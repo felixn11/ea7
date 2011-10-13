@@ -43,7 +43,7 @@ public class SenderGateway extends Channel implements ISender {
 
     public boolean sendMessage(Message msg, Destination dest) {
          try {
-            producer.send(destination, msg);
+            producer.send(dest, msg);
             return true;
         } catch (JMSException ex) {
             Logger.getLogger(SenderGateway.class.getName()).log(Level.SEVERE, null, ex);

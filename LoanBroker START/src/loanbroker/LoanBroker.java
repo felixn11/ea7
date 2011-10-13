@@ -35,10 +35,9 @@ public class LoanBroker {
      * @param clientRequestQueue
      * @param creditRequestQueue
      * @param creditReplyQueue
-     * @param bankRequestQueue
      * @param bankReplyQueue
      */
-    public LoanBroker(String clientRequestQueue, String creditRequestQueue, String creditReplyQueue, String bankRequestQueue, String bankReplyQueue) throws Exception {
+    public LoanBroker(String clientRequestQueue, String creditRequestQueue, String creditReplyQueue, String bankReplyQueue) throws Exception {
        super();
         frame = new LoanBrokerFrame();
         activeClientProcesses = new ArrayList<ClientRequestProcess>();
@@ -52,7 +51,7 @@ public class LoanBroker {
         };
 
         creditGateway = new CreditGateway(creditReplyQueue, creditRequestQueue);
-        bankGateway = new BankGateway(bankRequestQueue);
+        bankGateway = new BankGateway(bankReplyQueue);
 
         java.awt.EventQueue.invokeLater(new Runnable() {
 
@@ -69,7 +68,7 @@ public class LoanBroker {
      * @param message the incomming message containng the ClientRequest
      */
     private void onClientRequest(ClientRequest request) { 
-        
+
         try {
             System.out.println("Loanbroaker received request from Client");
             final ClientRequestProcess p = new ClientRequestProcess(request, creditGateway, clientGateway, bankGateway) {
@@ -93,7 +92,7 @@ public class LoanBroker {
             frame.addObject(null, request);
         } catch (Exception ex) {
             Logger.getLogger(LoanBroker.class.getName()).log(Level.SEVERE, null, ex);
-        }       
+        } 
     }
 
     /**

@@ -13,6 +13,7 @@ import bank.BankQuoteRequest;
 import bank.BankSerializer;
 import java.awt.geom.AffineTransform;
 import java.util.Hashtable;
+import java.util.Iterator;
 import javax.jms.Message;
 import javax.jms.MessageListener;
 import javax.jms.TextMessage;
@@ -74,6 +75,7 @@ public class BankGateway {
      * @param msg the message that has just been received
      */
     private synchronized void messageReceived(TextMessage msg) {
+        
         try {
             int agrcor = msg.getIntProperty(AGGREGATION_CORRELATION);
             BankQuoteAggregate agr = replyAggregate.get(agrcor);
@@ -107,19 +109,23 @@ public class BankGateway {
      * @param replyListener
      */
     public synchronized void sendRequest(BankQuoteRequest request, IReplyListener<BankQuoteRequest, BankQuoteReply> listener) {
+
         try {
             String req = serializer.requestToString(request);
             Iterable<ISender> eligibleBanks = sender.getEligibleBanks(request);
             int bankCounter = 0;
-            while (eligibleBanks.iterator().hasNext()) {
-                eligibleBanks.iterator().next();
+            Iterator it = eligibleBanks.iterator();
+            while (it.hasNext()) {
+                Object next = it.next();
                 bankCounter++;
             }
+            System.out.println("Banks: " + bankCounter);
             for (ISender b : eligibleBanks) {
                 TextMessage msg = b.createMessage(req);
                 msg.setJMSReplyTo(receiver.getDestination());
                 msg.setIntProperty(AGGREGATION_CORRELATION, aggregateCounter);
                 b.sendMessage(msg);
+                System.out.println("Loanbroaker sent request to Bank");
             }
             if (bankCounter > 0) {
                 BankQuoteAggregate bankQuoteAggregate = new BankQuoteAggregate(request, bankCounter, listener);
@@ -129,7 +135,6 @@ public class BankGateway {
                 BankQuoteReply bankQuoteReply = new BankQuoteReply(0, "There are no eligible banks for this loan.", 10);
                 listener.onReply(request, bankQuoteReply);
             }
-
         } catch (Exception ex) {
             Logger.getLogger(BankGateway.class.getName()).log(Level.SEVERE, null, ex);
         }

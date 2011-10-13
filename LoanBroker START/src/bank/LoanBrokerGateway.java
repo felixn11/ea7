@@ -2,6 +2,7 @@ package bank;
 
 import java.util.logging.*;
 import javax.jms.JMSException;
+import javax.jms.Message;
 import messaging.requestreply.AsynchronousReplier;
 import messaging.requestreply.IRequestListener;
 
@@ -17,10 +18,11 @@ abstract class LoanBrokerGateway {
     public LoanBrokerGateway(String bankRequestQueue, String bankReplyQueue) throws Exception {
         // create the serializer
         serializer = new BankSerializer();
-        msgGateway = new AsynchronousReplier<BankQuoteRequest, BankQuoteReply>(bankReplyQueue, serializer);
+        msgGateway = new AsynchronousReplier<BankQuoteRequest, BankQuoteReply>(bankRequestQueue, serializer);
         msgGateway.setRequestListener(new IRequestListener<BankQuoteRequest>() {
 
             public void receivedRequest(BankQuoteRequest request) {
+                System.out.println("Bank received request from Loanbroaker");
                 receivedQuoteRequest(request);
             }
         });
