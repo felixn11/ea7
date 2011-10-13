@@ -26,6 +26,7 @@ public class MessagingGateway {
 
     public MessagingGateway(String receiveQueue) throws NamingException, JMSException {
         receiver = MessagingFactory.createReceiver(receiveQueue);
+        sender = MessagingFactory.createSender("");
     }
 
     public boolean sendMessage(Message msg) {
@@ -64,10 +65,14 @@ public class MessagingGateway {
         return sender.getDestination();
     }
 
-    public void openConnection() throws JMSException {
-        receiver.openConnection();
-        if (sender != null) {
-            sender.openConnection();
+    public void openConnection(){
+        try {
+            receiver.openConnection();
+            if (sender != null) {
+                sender.openConnection();
+            }
+        } catch (JMSException ex) {
+            Logger.getLogger(MessagingGateway.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 }

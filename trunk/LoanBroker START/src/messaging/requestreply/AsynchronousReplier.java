@@ -110,7 +110,11 @@ public class AsynchronousReplier<REQUEST, REPLY> {
         TextMessage replyMsg = gateway.createMessage(tempReplyMsg);
         replyMsg.setJMSCorrelationID(requestMsg.getJMSMessageID()); // corrid
         Destination dest = requestMsg.getJMSReplyTo();// retourn address
+        beforeSendReply(requestMsg, replyMsg);
         gateway.sendMessage(dest, replyMsg);
         return true;
+    }
+
+    protected void beforeSendReply(Message request, Message reply) {
     }
 }

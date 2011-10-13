@@ -109,6 +109,7 @@ public class AsynchronousRequestor<REQUEST, REPLY> {
      */
     private synchronized void onReply(TextMessage message) {
         try {
+            
             Pair pair = listeners.get(message.getJMSCorrelationID());
             REPLY reply = serializer.replyFromString(message.getText());
             pair.listener.onReply(pair.request, reply);
