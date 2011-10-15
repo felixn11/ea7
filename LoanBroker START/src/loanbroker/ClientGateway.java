@@ -5,6 +5,7 @@ import client.ClientRequest;
 import client.ClientSerializer;
 import java.util.logging.*;
 import javax.jms.JMSException;
+import javax.jms.Message;
 import messaging.requestreply.AsynchronousReplier;
 import messaging.requestreply.IRequestListener;
 
@@ -20,7 +21,12 @@ public abstract class ClientGateway {
     public ClientGateway(String requestQueue) throws Exception {
         // create the serializer
         serializer = new ClientSerializer();
-        msgGateway = new AsynchronousReplier<ClientRequest, ClientReply>(requestQueue, serializer);
+        msgGateway = new AsynchronousReplier<ClientRequest, ClientReply>(requestQueue, serializer) {
+
+            @Override
+            public void beforeSendReply(Message request, Message reply) {
+            }
+        };
         msgGateway.setRequestListener(new IRequestListener<ClientRequest>() {
 
             public void receivedRequest(ClientRequest request) {

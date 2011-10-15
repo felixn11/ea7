@@ -16,7 +16,7 @@ import messaging.MessagingGateway;
  * @param <REPLY>
  * @author Maja Pesic
  */
-public class AsynchronousReplier<REQUEST, REPLY> {
+public abstract class AsynchronousReplier<REQUEST, REPLY> {
 
     /**
      * For sending and receiving messages
@@ -115,6 +115,5 @@ public class AsynchronousReplier<REQUEST, REPLY> {
         return true;
     }
 
-    protected void beforeSendReply(Message request, Message reply) {
-    }
+    public abstract void beforeSendReply(Message request, Message reply);
 }
