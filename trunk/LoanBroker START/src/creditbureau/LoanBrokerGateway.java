@@ -2,6 +2,7 @@ package creditbureau;
 
 import java.util.logging.*;
 import javax.jms.JMSException;
+import javax.jms.Message;
 import messaging.requestreply.AsynchronousReplier;
 import messaging.requestreply.IRequestListener;
 
@@ -17,7 +18,12 @@ abstract class LoanBrokerGateway {
     public LoanBrokerGateway(String creditRequestQueue, String creditReplyQueue) throws Exception {
         // create the serializer
         serializer = new CreditSerializer();
-        msgGateway = new AsynchronousReplier<CreditRequest, CreditReply>(creditReplyQueue, serializer);
+        msgGateway = new AsynchronousReplier<CreditRequest, CreditReply>(creditReplyQueue, serializer) {
+
+            @Override
+            public void beforeSendReply(Message request, Message reply) {
+            }
+        };
         msgGateway.setRequestListener(new IRequestListener<CreditRequest>() {
 
             public void receivedRequest(CreditRequest request) {

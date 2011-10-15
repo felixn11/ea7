@@ -75,7 +75,6 @@ public class BankGateway {
      * @param msg the message that has just been received
      */
     private synchronized void messageReceived(TextMessage msg) {
-        
         try {
             int agrcor = msg.getIntProperty(AGGREGATION_CORRELATION);
             BankQuoteAggregate agr = replyAggregate.get(agrcor);
@@ -109,7 +108,6 @@ public class BankGateway {
      * @param replyListener
      */
     public synchronized void sendRequest(BankQuoteRequest request, IReplyListener<BankQuoteRequest, BankQuoteReply> listener) {
-
         try {
             String req = serializer.requestToString(request);
             Iterable<ISender> eligibleBanks = sender.getEligibleBanks(request);
